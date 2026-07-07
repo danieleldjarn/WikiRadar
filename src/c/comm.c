@@ -1,6 +1,7 @@
 #include <pebble.h>
 #include "comm.h"
 #include "data.h"
+#include "cache.h"
 #include "list_window.h"
 #include "article_window.h"
 #include "compass_window.h"
@@ -59,8 +60,9 @@ void comm_request_list(void) {
 
 void comm_request_summary(int index) {
   s_summary_index = index;
+  // Note: g_summary is left intact — it may hold a cached summary that the
+  // article window is displaying; the first fresh chunk overwrites it.
   s_summary_len = 0;
-  g_summary[0] = '\0';
   prv_send(CMD_GET_SUMMARY, index, true);
 }
 
@@ -121,6 +123,7 @@ static void prv_inbox_received(DictionaryIterator *iter, void *context) {
       g_article_count = 0;
       prv_update_location(iter);
       list_window_set_status("Loading nearby...");
+      list_window_set_header("Updating...");
       break;
     case CMD_LIST_ITEM:
       prv_handle_list_item(iter);
@@ -129,7 +132,11 @@ static void prv_inbox_received(DictionaryIterator *iter, void *context) {
     case CMD_LIST_DONE:
       if (g_article_count == 0) {
         list_window_set_status("Nothing nearby");
+      } else {
+        g_list_fetch_time = time(NULL);
+        cache_save_list();
       }
+      list_window_show_fetch_time("Updated");
       list_window_on_list_updated(true);
       break;
     case CMD_SUMMARY_CHUNK:
