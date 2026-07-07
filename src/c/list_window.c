@@ -6,7 +6,7 @@
 static Window *s_window;
 static MenuLayer *s_menu;
 static char s_status[64] = "Locating...";
-static char s_header[24] = "Nearby Wiki";
+static char s_header[36] = "Nearby Wiki";
 
 static int16_t prv_get_header_height(MenuLayer *menu, uint16_t section,
                                      void *context) {
@@ -15,7 +15,37 @@ static int16_t prv_get_header_height(MenuLayer *menu, uint16_t section,
 
 static void prv_draw_header(GContext *ctx, const Layer *cell_layer,
                             uint16_t section, void *context) {
-  menu_cell_basic_header_draw(ctx, cell_layer, s_header);
+  GRect bounds = layer_get_bounds(cell_layer);
+  GFont font = fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD);
+  graphics_context_set_text_color(ctx, GColorBlack);
+
+  // Left: fetch status ("Loc update at 12:04")
+  graphics_draw_text(ctx, s_header, font,
+                     GRect(2, -3, bounds.size.w - 56, 16),
+                     GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft,
+                     NULL);
+
+  // Right: clock glyph + current time
+  static char s_now[8];
+  time_t now = time(NULL);
+  strftime(s_now, sizeof(s_now), clock_is_24h_style() ? "%H:%M" : "%I:%M",
+           localtime(&now));
+  GPoint center = GPoint(bounds.size.w - 48, 8);
+  graphics_context_set_stroke_color(ctx, GColorBlack);
+  graphics_context_set_stroke_width(ctx, 1);
+  graphics_draw_circle(ctx, center, 5);
+  graphics_draw_line(ctx, center, GPoint(center.x, center.y - 3));
+  graphics_draw_line(ctx, center, GPoint(center.x + 2, center.y));
+  graphics_draw_text(ctx, s_now, font,
+                     GRect(bounds.size.w - 40, -3, 38, 16),
+                     GTextOverflowModeTrailingEllipsis, GTextAlignmentRight,
+                     NULL);
+}
+
+static void prv_tick(struct tm *tick_time, TimeUnits units_changed) {
+  if (s_menu) {
+    menu_layer_reload_data(s_menu);
+  }
 }
 
 static uint16_t prv_get_num_rows(MenuLayer *menu, uint16_t section,
@@ -68,7 +98,7 @@ void list_window_show_fetch_time(const char *prefix) {
   struct tm *lt = localtime(&g_list_fetch_time);
   char tbuf[8];
   strftime(tbuf, sizeof(tbuf), clock_is_24h_style() ? "%H:%M" : "%I:%M", lt);
-  char header[24];
+  char header[36];
   snprintf(header, sizeof(header), "%s %s", prefix, tbuf);
   list_window_set_header(header);
 }
@@ -95,9 +125,11 @@ static void prv_window_load(Window *window) {
   menu_layer_set_highlight_colors(s_menu, GColorVividCerulean, GColorWhite);
   menu_layer_set_click_config_onto_window(s_menu, window);
   layer_add_child(root, menu_layer_get_layer(s_menu));
+  tick_timer_service_subscribe(MINUTE_UNIT, prv_tick);
 }
 
 static void prv_window_unload(Window *window) {
+  tick_timer_service_unsubscribe();
   menu_layer_destroy(s_menu);
   s_menu = NULL;
 }

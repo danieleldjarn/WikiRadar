@@ -6,7 +6,9 @@
     "pebble-app"
   ],
   "private": true,
-  "dependencies": {},
+  "dependencies": {
+    "pebble-clay": "^1.0.4"
+  },
   "pebble": {
     "displayName": "Nearby Wiki",
     "uuid": "4a9a9748-8790-4c6f-896b-1d8bf26644b5",
@@ -32,7 +34,9 @@
       "LOC_LAT",
       "LOC_LON",
       "UNITS",
-      "ERROR"
+      "ERROR",
+      "LANG",
+      "LANG_CUSTOM"
     ],
     "resources": {
       "media": []

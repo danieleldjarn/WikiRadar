@@ -107,6 +107,15 @@ static void prv_handle_summary_chunk(DictionaryIterator *iter) {
 }
 
 static void prv_inbox_received(DictionaryIterator *iter, void *context) {
+  // Settings messages from Clay have no CMD, just the setting keys
+  Tuple *units = dict_find(iter, MESSAGE_KEY_UNITS);
+  if (units) {
+    data_set_units(units->value->int32 != 0);
+    list_window_on_list_updated(false);
+    article_window_on_location();
+    compass_window_on_location();
+  }
+
   Tuple *cmd = dict_find(iter, MESSAGE_KEY_CMD);
   if (!cmd) {
     return;
@@ -136,7 +145,7 @@ static void prv_inbox_received(DictionaryIterator *iter, void *context) {
         g_list_fetch_time = time(NULL);
         cache_save_list();
       }
-      list_window_show_fetch_time("Updated");
+      list_window_show_fetch_time("Loc update at");
       list_window_on_list_updated(true);
       break;
     case CMD_SUMMARY_CHUNK:

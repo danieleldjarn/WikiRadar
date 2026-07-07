@@ -4,6 +4,18 @@ Article g_articles[MAX_ARTICLES];
 int g_article_count = 0;
 char g_summary[MAX_SUMMARY_LEN];
 bool g_units_imperial = false;
+
+// Persist keys 1..50 belong to cache.c
+#define PKEY_UNITS 60
+
+void data_set_units(bool imperial) {
+  g_units_imperial = imperial;
+  persist_write_bool(PKEY_UNITS, imperial);
+}
+
+void data_load_units(void) {
+  g_units_imperial = persist_read_bool(PKEY_UNITS);
+}
 int32_t g_cur_lat = 0;
 int32_t g_cur_lon = 0;
 bool g_has_location = false;
