@@ -5,6 +5,12 @@
 #define DIST_H 36
 #define DIAL_RADIUS 58
 
+// Radar ping: a ring expands from the center to the dial edge, then
+// pauses before the next sweep
+#define PING_INTERVAL_MS 4000
+#define PING_STEP_MS 40
+#define PING_STEP_PX 3
+
 static Window *s_window;
 static Layer *s_dial_layer;
 static TextLayer *s_title_layer;
@@ -15,6 +21,8 @@ static Article s_article;
 static int32_t s_heading = 0;
 static bool s_heading_valid = false;
 static char s_dist_text[24];
+static AppTimer *s_ping_timer;
+static int s_ping_radius = -1;  // -1 = between pings
 
 // Arrow pointing up (north) before rotation; roughly 100px tall
 static const GPathInfo ARROW_PATH_INFO = {
@@ -39,12 +47,37 @@ static void prv_update_status(void) {
   }
 }
 
+static int prv_dial_radius(void) {
+  GRect bounds = layer_get_bounds(s_dial_layer);
+  int radius = bounds.size.h / 2 - 2;
+  return radius > DIAL_RADIUS ? DIAL_RADIUS : radius;
+}
+
+static void prv_ping_tick(void *context) {
+  if (s_ping_radius < 0) {
+    s_ping_radius = 0;  // start a new sweep
+  } else {
+    s_ping_radius += PING_STEP_PX;
+  }
+  bool done = s_ping_radius >= prv_dial_radius();
+  if (done) {
+    s_ping_radius = -1;
+  }
+  s_ping_timer = app_timer_register(done ? PING_INTERVAL_MS : PING_STEP_MS,
+                                    prv_ping_tick, NULL);
+  layer_mark_dirty(s_dial_layer);
+}
+
 static void prv_dial_update(Layer *layer, GContext *ctx) {
   GRect bounds = layer_get_bounds(layer);
   GPoint center = grect_center_point(&bounds);
-  int radius = bounds.size.h / 2 - 2;
-  if (radius > DIAL_RADIUS) {
-    radius = DIAL_RADIUS;
+  int radius = prv_dial_radius();
+
+  if (s_ping_radius > 0) {
+    graphics_context_set_stroke_color(
+        ctx, PBL_IF_COLOR_ELSE(GColorCeleste, GColorLightGray));
+    graphics_context_set_stroke_width(ctx, 2);
+    graphics_draw_circle(ctx, center, s_ping_radius);
   }
 
   graphics_context_set_stroke_color(ctx, GColorLightGray);
@@ -84,10 +117,16 @@ void compass_window_on_location(void) {
 
 static void prv_window_appear(Window *window) {
   compass_service_subscribe(prv_compass_handler);
+  s_ping_radius = -1;
+  s_ping_timer = app_timer_register(600, prv_ping_tick, NULL);
 }
 
 static void prv_window_disappear(Window *window) {
   compass_service_unsubscribe();
+  if (s_ping_timer) {
+    app_timer_cancel(s_ping_timer);
+    s_ping_timer = NULL;
+  }
 }
 
 static void prv_window_load(Window *window) {
