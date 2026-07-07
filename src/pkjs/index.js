@@ -1,4 +1,4 @@
-var Clay = require('pebble-clay');
+var Clay = require('@rebble/clay');
 var clayConfig = require('./config');
 // autoHandleEvents off: the settings dict goes through our send queue
 // so it can't collide with an in-flight list or summary stream.
