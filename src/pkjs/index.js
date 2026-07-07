@@ -208,7 +208,7 @@ function fetchJSON(url, cb) {
   xhr.open('GET', url);
   // Wikipedia rejects requests without a user agent (403). Browsers forbid
   // setting User-Agent, so Wikipedia accepts Api-User-Agent instead; try both.
-  var ua = 'nearby-wiki-pebble/1.0 (danielv@dohop.com)';
+  var ua = 'wikiradar-pebble/1.0 (danielv@dohop.com)';
   try { xhr.setRequestHeader('Api-User-Agent', ua); } catch (e) {}
   try { xhr.setRequestHeader('User-Agent', ua); } catch (e) {}
   xhr.send();

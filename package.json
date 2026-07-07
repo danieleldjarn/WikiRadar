@@ -1,5 +1,5 @@
 {
-  "name": "nearby-wiki",
+  "name": "wikiradar",
   "author": "Daniel E V",
   "version": "1.0.0",
   "keywords": [
@@ -10,7 +10,7 @@
     "@rebble/clay": "^1.0.10"
   },
   "pebble": {
-    "displayName": "Nearby Wiki",
+    "displayName": "WikiRadar",
     "uuid": "4a9a9748-8790-4c6f-896b-1d8bf26644b5",
     "sdkVersion": "3",
     "enableMultiJS": true,

@@ -1,7 +1,7 @@
 module.exports = [
   {
     type: 'heading',
-    defaultValue: 'Nearby Wiki',
+    defaultValue: 'WikiRadar',
   },
   {
     type: 'text',

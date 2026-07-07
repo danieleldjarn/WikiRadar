@@ -7,7 +7,7 @@
 static Window *s_window;
 static MenuLayer *s_menu;
 static char s_status[64] = "Locating...";
-static char s_header[36] = "Nearby Wiki";
+static char s_header[36] = "WikiRadar";
 
 static int16_t prv_get_header_height(MenuLayer *menu, uint16_t section,
                                      void *context) {

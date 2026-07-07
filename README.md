@@ -1,4 +1,4 @@
-# nearby-wiki
+# WikiRadar
 A PebbleOS app that shows you nearby Wikipedia entries based on your location.
 
 Supports all PebbleOS watches: the originals (aplite), Pebble Time (basalt),
