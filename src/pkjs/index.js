@@ -179,6 +179,17 @@ function getLang() {
   }
 }
 
+function getRadius() {
+  try {
+    var s = JSON.parse(localStorage.getItem('clay-settings')) || {};
+    var r = parseInt(s.RADIUS, 10);
+    if (r >= 100 && r <= SEARCH_RADIUS_M) {
+      return r;
+    }
+  } catch (e) {}
+  return SEARCH_RADIUS_M;
+}
+
 function fetchJSON(url, cb) {
   var xhr = new XMLHttpRequest();
   xhr.onload = function () {
@@ -197,7 +208,7 @@ function fetchJSON(url, cb) {
   xhr.open('GET', url);
   // Wikipedia rejects requests without a user agent (403). Browsers forbid
   // setting User-Agent, so Wikipedia accepts Api-User-Agent instead; try both.
-  var ua = 'nearby-wiki-pebble/1.0 (danielv@dohop.com)';
+  var ua = 'wikiradar-pebble/1.0 (danielv@dohop.com)';
   try { xhr.setRequestHeader('Api-User-Agent', ua); } catch (e) {}
   try { xhr.setRequestHeader('User-Agent', ua); } catch (e) {}
   xhr.send();
@@ -217,7 +228,7 @@ function handleGetList() {
       'https://' + getLang() + '.wikipedia.org/w/api.php' +
       '?action=query&list=geosearch' +
       '&gscoord=' + coords.latitude + '%7C' + coords.longitude +
-      '&gsradius=' + SEARCH_RADIUS_M +
+      '&gsradius=' + getRadius() +
       '&gslimit=' + MAX_ARTICLES +
       '&format=json';
     fetchJSON(url, function (err2, json) {
@@ -312,11 +323,12 @@ Pebble.addEventListener('webviewclosed', function (e) {
     return;
   }
   var oldLang = getLang();
+  var oldRadius = getRadius();
   // getSettings also persists to localStorage ('clay-settings')
   var settings = clay.getSettings(e.response);
   enqueue([settings]); // delivers UNITS to the watch
-  if (getLang() !== oldLang) {
-    console.log('Language changed to ' + getLang() + ', refreshing');
+  if (getLang() !== oldLang || getRadius() !== oldRadius) {
+    console.log('Search settings changed, refreshing');
     handleGetList();
   }
 });

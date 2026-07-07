@@ -2,11 +2,12 @@
 #include "data.h"
 #include "comm.h"
 #include "article_window.h"
+#include "compass_window.h"
 
 static Window *s_window;
 static MenuLayer *s_menu;
 static char s_status[64] = "Locating...";
-static char s_header[36] = "Nearby Wiki";
+static char s_header[36] = "WikiRadar";
 
 static int16_t prv_get_header_height(MenuLayer *menu, uint16_t section,
                                      void *context) {
@@ -70,6 +71,16 @@ static void prv_draw_row(GContext *ctx, const Layer *cell_layer,
   char dist[16];
   data_format_distance(a->distance_m, dist, sizeof(dist));
   menu_cell_basic_draw(ctx, cell_layer, a->title, dist, NULL);
+
+  if (data_is_read(a->title)) {
+    GRect bounds = layer_get_bounds(cell_layer);
+    graphics_context_set_fill_color(
+        ctx, menu_cell_layer_is_highlighted(cell_layer)
+                 ? GColorWhite
+                 : PBL_IF_COLOR_ELSE(GColorVividCerulean, GColorBlack));
+    graphics_fill_circle(ctx, GPoint(bounds.size.w - 9, bounds.size.h / 2),
+                         3);
+  }
 }
 
 static void prv_select_click(MenuLayer *menu, MenuIndex *cell_index,
@@ -80,10 +91,24 @@ static void prv_select_click(MenuLayer *menu, MenuIndex *cell_index,
   article_window_push(cell_index->row);
 }
 
+// Long-press select: straight to the compass, skipping the article
 static void prv_select_long_click(MenuLayer *menu, MenuIndex *cell_index,
                                   void *context) {
-  g_article_count = 0;
-  list_window_set_status("Refreshing...");
+  if (g_article_count == 0) {
+    return;
+  }
+  compass_window_push(&g_articles[cell_index->row]);
+}
+
+// Shake to refresh (auto-refresh handles movement; this forces it)
+static void prv_tap_handler(AccelAxisType axis, int32_t direction) {
+  static time_t s_last_tap;
+  time_t now = time(NULL);
+  if (now - s_last_tap < 3) {
+    return;
+  }
+  s_last_tap = now;
+  list_window_set_header("Updating...");
   comm_request_list();
 }
 
@@ -149,12 +174,25 @@ static void prv_window_unload(Window *window) {
   s_menu = NULL;
 }
 
+static void prv_window_appear(Window *window) {
+  accel_tap_service_subscribe(prv_tap_handler);
+  if (s_menu) {
+    menu_layer_reload_data(s_menu);  // read markers may have changed
+  }
+}
+
+static void prv_window_disappear(Window *window) {
+  accel_tap_service_unsubscribe();
+}
+
 void list_window_push(void) {
   if (!s_window) {
     s_window = window_create();
     window_set_window_handlers(s_window, (WindowHandlers){
         .load = prv_window_load,
         .unload = prv_window_unload,
+        .appear = prv_window_appear,
+        .disappear = prv_window_disappear,
     });
   }
   window_stack_push(s_window, true);

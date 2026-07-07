@@ -249,6 +249,7 @@ void article_window_push(int article_index) {
   s_index = article_index;
   s_article = g_articles[article_index];
   s_have_cached_summary = cache_load_summary(s_article.title);
+  data_mark_read(s_article.title);
   s_window = window_create();
   window_set_window_handlers(s_window, (WindowHandlers){
       .load = prv_window_load,

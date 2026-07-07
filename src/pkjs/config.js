@@ -1,7 +1,7 @@
 module.exports = [
   {
     type: 'heading',
-    defaultValue: 'Nearby Wiki',
+    defaultValue: 'WikiRadar',
   },
   {
     type: 'text',
@@ -36,6 +36,18 @@ module.exports = [
           { label: 'Русский', value: 'ru' },
           { label: '日本語', value: 'ja' },
           { label: '中文', value: 'zh' },
+        ],
+      },
+      {
+        type: 'select',
+        messageKey: 'RADIUS',
+        defaultValue: '10000',
+        label: 'Search radius',
+        options: [
+          { label: '1 km', value: '1000' },
+          { label: '2 km', value: '2000' },
+          { label: '5 km', value: '5000' },
+          { label: '10 km', value: '10000' },
         ],
       },
       {
