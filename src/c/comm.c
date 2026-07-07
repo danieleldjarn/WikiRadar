@@ -145,7 +145,7 @@ static void prv_inbox_received(DictionaryIterator *iter, void *context) {
         g_list_fetch_time = time(NULL);
         cache_save_list();
       }
-      list_window_show_fetch_time("Loc update at");
+      list_window_show_fetch_time("Loc update at", "Upd");
       list_window_on_list_updated(true);
       break;
     case CMD_SUMMARY_CHUNK:

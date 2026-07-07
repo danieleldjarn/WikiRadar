@@ -155,6 +155,17 @@ function getLocation(cb) {
 
 // ---- Wikipedia --------------------------------------------------------------
 
+function summaryMaxChars() {
+  // Aplite's summary buffer is half-sized (24KB total app RAM)
+  try {
+    var info = Pebble.getActiveWatchInfo && Pebble.getActiveWatchInfo();
+    if (info && info.platform === 'aplite') {
+      return 2000;
+    }
+  } catch (e) {}
+  return SUMMARY_MAX_CHARS;
+}
+
 function getLang() {
   try {
     var s = JSON.parse(localStorage.getItem('clay-settings')) || {};
@@ -257,8 +268,9 @@ function handleGetSummary(index) {
       return;
     }
     var text = page.extract;
-    if (text.length > SUMMARY_MAX_CHARS) {
-      text = text.substring(0, SUMMARY_MAX_CHARS - 1) + '…';
+    var maxChars = summaryMaxChars();
+    if (text.length > maxChars) {
+      text = text.substring(0, maxChars - 1) + '…';
     }
     var msgs = [];
     for (var off = 0; off < text.length; off += CHUNK_SIZE) {
