@@ -1,0 +1,41 @@
+{
+  "name": "nearby-wiki",
+  "author": "Daniel E V",
+  "version": "1.0.0",
+  "keywords": [
+    "pebble-app"
+  ],
+  "private": true,
+  "dependencies": {},
+  "pebble": {
+    "displayName": "Nearby Wiki",
+    "uuid": "4a9a9748-8790-4c6f-896b-1d8bf26644b5",
+    "sdkVersion": "3",
+    "enableMultiJS": true,
+    "targetPlatforms": [
+      "emery"
+    ],
+    "watchapp": {
+      "watchface": false
+    },
+    "messageKeys": [
+      "CMD",
+      "INDEX",
+      "TITLE",
+      "LAT",
+      "LON",
+      "DISTANCE",
+      "COUNT",
+      "CHUNK",
+      "OFFSET",
+      "DONE",
+      "LOC_LAT",
+      "LOC_LON",
+      "UNITS",
+      "ERROR"
+    ],
+    "resources": {
+      "media": []
+    }
+  }
+}
