@@ -3,7 +3,7 @@
 
 #define MAX_ARTICLES 20
 #define MAX_TITLE_LEN 48
-#define MAX_SUMMARY_LEN 2048
+#define MAX_SUMMARY_LEN 4096
 
 typedef struct {
   char title[MAX_TITLE_LEN];

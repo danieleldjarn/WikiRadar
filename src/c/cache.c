@@ -13,6 +13,9 @@ enum {
 
 #define CACHE_VERSION 1
 #define SUM_CHUNK 250
+// The persist budget (~4KB total, shared with the list) can't hold a full
+// 4000-char summary; offline re-reads show the first 2000 chars.
+#define SUM_CACHE_MAX 2000
 
 void cache_save_list(void) {
   persist_write_int(PKEY_VERSION, CACHE_VERSION);
@@ -48,6 +51,9 @@ void cache_save_summary(const char *title) {
   int len = strlen(g_summary);
   if (len == 0) {
     return;
+  }
+  if (len > SUM_CACHE_MAX) {
+    len = SUM_CACHE_MAX;
   }
   persist_write_string(PKEY_SUM_TITLE, title);
   persist_write_int(PKEY_SUM_LEN, len);

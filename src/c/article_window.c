@@ -59,19 +59,26 @@ void article_window_on_location(void) {
   prv_update_distance();
 }
 
+// Measure text independently of layer render state;
+// text_layer_get_content_size is only reliable after a render.
+static int16_t prv_text_height(const char *text, const char *font_key,
+                               int width) {
+  GSize size = graphics_text_layout_get_content_size(
+      text, fonts_get_system_font(font_key), GRect(0, 0, width, 8000),
+      GTextOverflowModeWordWrap, GTextAlignmentLeft);
+  return size.h;
+}
+
 static void prv_layout(void) {
   GRect bounds = layer_get_bounds(window_get_root_layer(s_window));
   int width = bounds.size.w - 2 * MARGIN;
 
-  // Content size measurement is clipped to the layer's frame, so grow the
-  // frame before measuring, then shrink it to fit.
+  int16_t title_h =
+      prv_text_height(s_article.title, FONT_KEY_GOTHIC_24_BOLD, width);
   layer_set_frame(text_layer_get_layer(s_title_layer),
-                  GRect(MARGIN, 0, width, 500));
-  GSize title_size = text_layer_get_content_size(s_title_layer);
-  layer_set_frame(text_layer_get_layer(s_title_layer),
-                  GRect(MARGIN, 0, width, title_size.h + 8));
+                  GRect(MARGIN, 0, width, title_h + 8));
 
-  int dist_y = title_size.h + 8;
+  int dist_y = title_h + 8;
   layer_set_frame(s_glyph_layer, GRect(MARGIN, dist_y + 2, GLYPH_W, 18));
   layer_set_frame(text_layer_get_layer(s_dist_layer),
                   GRect(MARGIN + GLYPH_W + 2, dist_y, width - GLYPH_W - 2,
@@ -81,14 +88,13 @@ static void prv_layout(void) {
                         width - GLYPH_W - 2, DIST_ROW_H));
 
   int body_y = dist_y + DIST_ROW_H + 2;
+  int16_t body_h = prv_text_height(text_layer_get_text(s_body_layer),
+                                   FONT_KEY_GOTHIC_24, width);
   layer_set_frame(text_layer_get_layer(s_body_layer),
-                  GRect(MARGIN, body_y, width, 4000));
-  GSize body_size = text_layer_get_content_size(s_body_layer);
-  layer_set_frame(text_layer_get_layer(s_body_layer),
-                  GRect(MARGIN, body_y, width, body_size.h + 12));
+                  GRect(MARGIN, body_y, width, body_h + 12));
 
   scroll_layer_set_content_size(
-      s_scroll, GSize(bounds.size.w, body_y + body_size.h + 16));
+      s_scroll, GSize(bounds.size.w, body_y + body_h + 16));
 }
 
 static void prv_select_handler(ClickRecognizerRef recognizer, void *context) {

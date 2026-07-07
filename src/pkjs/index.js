@@ -14,7 +14,7 @@ var CMD = {
 
 var MAX_ARTICLES = 20;
 var SEARCH_RADIUS_M = 10000; // geosearch API maximum
-var SUMMARY_MAX_CHARS = 2000;
+var SUMMARY_MAX_CHARS = 4000;
 var CHUNK_SIZE = 400;
 var SEND_RETRIES = 3;
 var LOC_SEND_INTERVAL_MS = 3000;
@@ -228,15 +228,20 @@ function handleGetSummary(index) {
     sendError('Unknown article');
     return;
   }
+  // TextExtracts with exintro returns the full intro section; the REST
+  // page/summary endpoint only returns the first paragraph.
   var url =
-    'https://' + getLang() + '.wikipedia.org/api/rest_v1/page/summary/' +
-    encodeURIComponent(a.title.replace(/ /g, '_'));
+    'https://' + getLang() + '.wikipedia.org/w/api.php' +
+    '?action=query&prop=extracts&exintro&explaintext&format=json' +
+    '&redirects=1&pageids=' + a.pageid;
   fetchJSON(url, function (err, json) {
-    if (err || !json.extract) {
+    var page = json && json.query && json.query.pages &&
+               json.query.pages[a.pageid];
+    if (err || !page || !page.extract) {
       sendError('No summary');
       return;
     }
-    var text = json.extract;
+    var text = page.extract;
     if (text.length > SUMMARY_MAX_CHARS) {
       text = text.substring(0, SUMMARY_MAX_CHARS - 1) + '…';
     }

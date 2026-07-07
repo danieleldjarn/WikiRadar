@@ -144,6 +144,8 @@ static void prv_inbox_received(DictionaryIterator *iter, void *context) {
       article_window_on_summary(false);
       break;
     case CMD_SUMMARY_DONE:
+      APP_LOG(APP_LOG_LEVEL_INFO, "Summary complete: %d chars",
+              (int)s_summary_len);
       article_window_on_summary(true);
       break;
     case CMD_LOC:
