@@ -7,6 +7,9 @@
 #define MARGIN 4
 #define DIST_ROW_H 22
 #define GLYPH_W 16
+#define COORD_ROW_H 18
+// Below this width the coordinates get their own row under the distance
+#define NARROW_W 180
 
 static Window *s_window;
 static ScrollLayer *s_scroll;
@@ -83,11 +86,21 @@ static void prv_layout(void) {
   layer_set_frame(text_layer_get_layer(s_dist_layer),
                   GRect(MARGIN + GLYPH_W + 2, dist_y, width - GLYPH_W - 2,
                         DIST_ROW_H));
-  layer_set_frame(text_layer_get_layer(s_coord_layer),
-                  GRect(MARGIN + GLYPH_W + 2, dist_y + 3,
-                        width - GLYPH_W - 2, DIST_ROW_H));
 
-  int body_y = dist_y + DIST_ROW_H + 2;
+  int body_y;
+  if (bounds.size.w < NARROW_W) {
+    // Not enough room next to the distance; coordinates get their own row
+    int coord_y = dist_y + DIST_ROW_H - 2;
+    layer_set_frame(text_layer_get_layer(s_coord_layer),
+                    GRect(MARGIN + GLYPH_W + 2, coord_y,
+                          width - GLYPH_W - 2, COORD_ROW_H));
+    body_y = coord_y + COORD_ROW_H + 2;
+  } else {
+    layer_set_frame(text_layer_get_layer(s_coord_layer),
+                    GRect(MARGIN + GLYPH_W + 2, dist_y + 3,
+                          width - GLYPH_W - 2, DIST_ROW_H));
+    body_y = dist_y + DIST_ROW_H + 2;
+  }
   int16_t body_h = prv_text_height(text_layer_get_text(s_body_layer),
                                    FONT_KEY_GOTHIC_24, width);
   layer_set_frame(text_layer_get_layer(s_body_layer),
@@ -153,7 +166,9 @@ static void prv_window_load(Window *window) {
                       fonts_get_system_font(FONT_KEY_GOTHIC_14));
   text_layer_set_text_color(s_coord_layer, GColorDarkGray);
   text_layer_set_background_color(s_coord_layer, GColorClear);
-  text_layer_set_text_alignment(s_coord_layer, GTextAlignmentRight);
+  text_layer_set_text_alignment(s_coord_layer, bounds.size.w < NARROW_W
+                                                   ? GTextAlignmentLeft
+                                                   : GTextAlignmentRight);
   char lat_buf[12], lon_buf[12];
   prv_format_coord(s_article.lat, lat_buf, sizeof(lat_buf));
   prv_format_coord(s_article.lon, lon_buf, sizeof(lon_buf));

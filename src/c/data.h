@@ -3,7 +3,13 @@
 
 #define MAX_ARTICLES 20
 #define MAX_TITLE_LEN 48
+// Aplite has 24KB total app RAM; halving the summary buffer leaves the
+// heap breathing room (JS caps its sends to match)
+#ifdef PBL_PLATFORM_APLITE
+#define MAX_SUMMARY_LEN 2048
+#else
 #define MAX_SUMMARY_LEN 4096
+#endif
 
 typedef struct {
   char title[MAX_TITLE_LEN];

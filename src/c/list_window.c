@@ -94,10 +94,15 @@ void list_window_set_header(const char *header) {
   }
 }
 
-void list_window_show_fetch_time(const char *prefix) {
+void list_window_show_fetch_time(const char *prefix,
+                                 const char *short_prefix) {
   struct tm *lt = localtime(&g_list_fetch_time);
   char tbuf[8];
   strftime(tbuf, sizeof(tbuf), clock_is_24h_style() ? "%H:%M" : "%I:%M", lt);
+  if (s_window &&
+      layer_get_bounds(window_get_root_layer(s_window)).size.w < 180) {
+    prefix = short_prefix;
+  }
   char header[36];
   snprintf(header, sizeof(header), "%s %s", prefix, tbuf);
   list_window_set_header(header);
@@ -122,7 +127,10 @@ static void prv_window_load(Window *window) {
       .select_click = prv_select_click,
       .select_long_click = prv_select_long_click,
   });
-  menu_layer_set_highlight_colors(s_menu, GColorVividCerulean, GColorWhite);
+  // B&W: dithered cerulean makes white row text hard to read; use black
+  menu_layer_set_highlight_colors(
+      s_menu, PBL_IF_COLOR_ELSE(GColorVividCerulean, GColorBlack),
+      GColorWhite);
   menu_layer_set_click_config_onto_window(s_menu, window);
   layer_add_child(root, menu_layer_get_layer(s_menu));
   tick_timer_service_subscribe(MINUTE_UNIT, prv_tick);
