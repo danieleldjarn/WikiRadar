@@ -19,6 +19,8 @@ var CHUNK_SIZE = 400;
 var SEND_RETRIES = 3;
 var LOC_SEND_INTERVAL_MS = 3000;
 var LOC_MAX_AGE_MS = 30000;
+var AUTO_REFRESH_DIST_M = 300;
+var AUTO_REFRESH_MIN_INTERVAL_MS = 60000;
 
 // Debug override for the emulator's fixed fake GPS: [lat, lon] or null
 var FAKE_LOC = null; // e.g. [64.14660, -21.94260] for emulator testing
@@ -26,6 +28,8 @@ var FAKE_LOC = null; // e.g. [64.14660, -21.94260] for emulator testing
 var articles = [];
 var lastPos = null;
 var lastLocSentAt = 0;
+var lastFetchLoc = null; // {lat, lon} the current list was fetched from
+var lastFetchAt = 0;
 
 // ---- Single ordered send queue -------------------------------------------
 // AppMessage allows one message in flight; everything (list items, summary
@@ -81,21 +85,42 @@ function coordsOf(pos) {
   return pos.coords;
 }
 
+function distMeters(lat1, lon1, lat2, lon2) {
+  var dy = (lat2 - lat1) * 111320;
+  var dx = (lon2 - lon1) * 111320 * Math.cos(lat1 * Math.PI / 180);
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+// Re-fetch the list when we've moved far enough from where it was fetched
+function maybeAutoRefresh(coords) {
+  if (!lastFetchLoc ||
+      Date.now() - lastFetchAt < AUTO_REFRESH_MIN_INTERVAL_MS) {
+    return;
+  }
+  var moved = distMeters(lastFetchLoc.lat, lastFetchLoc.lon,
+                         coords.latitude, coords.longitude);
+  if (moved > AUTO_REFRESH_DIST_M) {
+    console.log('Auto-refresh: moved ' + Math.round(moved) + ' m');
+    handleGetList();
+  }
+}
+
 function startLocationStream() {
   navigator.geolocation.watchPosition(
     function (pos) {
       pos.receivedAt = Date.now();
       lastPos = pos;
       var now = Date.now();
+      var c = coordsOf(pos);
       if (now - lastLocSentAt >= LOC_SEND_INTERVAL_MS) {
         lastLocSentAt = now;
-        var c = coordsOf(pos);
         enqueue([{
           CMD: CMD.LOC,
           LOC_LAT: Math.round(c.latitude * 100000),
           LOC_LON: Math.round(c.longitude * 100000),
         }]);
       }
+      maybeAutoRefresh(c);
     },
     function (err) {
       console.log('watchPosition error: ' + err.message);
@@ -159,6 +184,9 @@ function handleGetList() {
       return;
     }
     console.log('Location: ' + coords.latitude + ',' + coords.longitude);
+    // Set before the fetch completes so a slow request isn't re-triggered
+    lastFetchLoc = { lat: coords.latitude, lon: coords.longitude };
+    lastFetchAt = Date.now();
     var url =
       'https://' + getLang() + '.wikipedia.org/w/api.php' +
       '?action=query&list=geosearch' +

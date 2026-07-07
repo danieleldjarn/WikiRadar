@@ -22,10 +22,13 @@ extern int32_t g_cur_lat;
 extern int32_t g_cur_lon;
 extern bool g_has_location;
 
+// Watch time when the current list arrived (or cache fetch time)
+extern time_t g_list_fetch_time;
+
 void data_format_distance(int32_t meters, char *buf, size_t buf_len);
 
 // Live distance (meters) / bearing (Pebble trig angle, clockwise from north)
 // from the current location to an article. Distance falls back to the
 // fetch-time value when no GPS fix has arrived yet.
-int32_t data_distance_to_article(int index);
-int32_t data_bearing_to_article(int index);
+int32_t data_distance_to(const Article *a);
+int32_t data_bearing_to(const Article *a);

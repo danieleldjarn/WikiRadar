@@ -11,7 +11,7 @@ static TextLayer *s_title_layer;
 static TextLayer *s_dist_layer;
 static TextLayer *s_status_layer;
 static GPath *s_arrow;
-static int s_index = -1;
+static Article s_article;
 static int32_t s_heading = 0;
 static bool s_heading_valid = false;
 static char s_dist_text[24];
@@ -24,7 +24,7 @@ static const GPathInfo ARROW_PATH_INFO = {
 };
 
 static void prv_update_distance(void) {
-  data_format_distance(data_distance_to_article(s_index), s_dist_text,
+  data_format_distance(data_distance_to(&s_article), s_dist_text,
                        sizeof(s_dist_text));
   text_layer_set_text(s_dist_layer, s_dist_text);
 }
@@ -51,7 +51,7 @@ static void prv_dial_update(Layer *layer, GContext *ctx) {
     return;
   }
 
-  int32_t bearing = data_bearing_to_article(s_index);
+  int32_t bearing = data_bearing_to(&s_article);
   int32_t angle = (s_heading + bearing) % TRIG_MAX_ANGLE;
   gpath_rotate_to(s_arrow, angle);
   gpath_move_to(s_arrow, center);
@@ -95,7 +95,7 @@ static void prv_window_load(Window *window) {
                       fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
   text_layer_set_text_alignment(s_title_layer, GTextAlignmentCenter);
   text_layer_set_overflow_mode(s_title_layer, GTextOverflowModeTrailingEllipsis);
-  text_layer_set_text(s_title_layer, g_articles[s_index].title);
+  text_layer_set_text(s_title_layer, s_article.title);
   layer_add_child(root, text_layer_get_layer(s_title_layer));
 
   int dial_h = bounds.size.h - TITLE_H - DIST_H;
@@ -133,8 +133,8 @@ static void prv_window_unload(Window *window) {
   s_window = NULL;
 }
 
-void compass_window_push(int article_index) {
-  s_index = article_index;
+void compass_window_push(const Article *article) {
+  s_article = *article;
   s_heading_valid = false;
   s_window = window_create();
   window_set_window_handlers(s_window, (WindowHandlers){

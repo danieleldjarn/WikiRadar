@@ -7,11 +7,11 @@ bool g_units_imperial = false;
 int32_t g_cur_lat = 0;
 int32_t g_cur_lon = 0;
 bool g_has_location = false;
+time_t g_list_fetch_time = 0;
 
 // Equirectangular deltas from current location to the article, in units of
 // 1e-5 degrees of latitude (~1.11 m each); dx east, dy north.
-static void prv_deltas(int index, int32_t *out_dx, int32_t *out_dy) {
-  Article *a = &g_articles[index];
+static void prv_deltas(const Article *a, int32_t *out_dx, int32_t *out_dy) {
   int32_t dlat = a->lat - g_cur_lat;
   int32_t dlon = a->lon - g_cur_lon;
   int32_t lat_angle =
@@ -33,19 +33,19 @@ static int64_t prv_isqrt(int64_t v) {
   return x;
 }
 
-int32_t data_distance_to_article(int index) {
+int32_t data_distance_to(const Article *a) {
   if (!g_has_location) {
-    return g_articles[index].distance_m;
+    return a->distance_m;
   }
   int32_t dx, dy;
-  prv_deltas(index, &dx, &dy);
+  prv_deltas(a, &dx, &dy);
   int64_t d2 = (int64_t)dx * dx + (int64_t)dy * dy;
   return (int32_t)(prv_isqrt(d2) * 111 / 100);
 }
 
-int32_t data_bearing_to_article(int index) {
+int32_t data_bearing_to(const Article *a) {
   int32_t dx, dy;
-  prv_deltas(index, &dx, &dy);
+  prv_deltas(a, &dx, &dy);
   while (dx > INT16_MAX || dx < INT16_MIN || dy > INT16_MAX ||
          dy < INT16_MIN) {
     dx /= 2;
