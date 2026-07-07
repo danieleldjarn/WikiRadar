@@ -1,3 +1,9 @@
+var Clay = require('pebble-clay');
+var clayConfig = require('./config');
+// autoHandleEvents off: the settings dict goes through our send queue
+// so it can't collide with an in-flight list or summary stream.
+var clay = new Clay(clayConfig, null, { autoHandleEvents: false });
+
 // CMD values shared with src/c/comm.c
 var CMD = {
   READY: 0,
@@ -150,7 +156,16 @@ function getLocation(cb) {
 // ---- Wikipedia --------------------------------------------------------------
 
 function getLang() {
-  return localStorage.getItem('lang') || 'en';
+  try {
+    var s = JSON.parse(localStorage.getItem('clay-settings')) || {};
+    var custom = String(s.LANG_CUSTOM || '').trim().toLowerCase();
+    if (custom) {
+      return custom;
+    }
+    return s.LANG || 'en';
+  } catch (e) {
+    return 'en';
+  }
 }
 
 function fetchJSON(url, cb) {
@@ -273,5 +288,23 @@ Pebble.addEventListener('appmessage', function (e) {
     case CMD.GET_SUMMARY:
       handleGetSummary(p.INDEX);
       break;
+  }
+});
+
+Pebble.addEventListener('showConfiguration', function () {
+  Pebble.openURL(clay.generateUrl());
+});
+
+Pebble.addEventListener('webviewclosed', function (e) {
+  if (!e || !e.response) {
+    return;
+  }
+  var oldLang = getLang();
+  // getSettings also persists to localStorage ('clay-settings')
+  var settings = clay.getSettings(e.response);
+  enqueue([settings]); // delivers UNITS to the watch
+  if (getLang() !== oldLang) {
+    console.log('Language changed to ' + getLang() + ', refreshing');
+    handleGetList();
   }
 });

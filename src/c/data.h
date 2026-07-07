@@ -27,6 +27,10 @@ extern time_t g_list_fetch_time;
 
 void data_format_distance(int32_t meters, char *buf, size_t buf_len);
 
+// Set (and persist) / load the units preference
+void data_set_units(bool imperial);
+void data_load_units(void);
+
 // Live distance (meters) / bearing (Pebble trig angle, clockwise from north)
 // from the current location to an article. Distance falls back to the
 // fetch-time value when no GPS fix has arrived yet.
