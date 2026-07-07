@@ -39,6 +39,18 @@ module.exports = [
         ],
       },
       {
+        type: 'select',
+        messageKey: 'RADIUS',
+        defaultValue: '10000',
+        label: 'Search radius',
+        options: [
+          { label: '1 km', value: '1000' },
+          { label: '2 km', value: '2000' },
+          { label: '5 km', value: '5000' },
+          { label: '10 km', value: '10000' },
+        ],
+      },
+      {
         type: 'input',
         messageKey: 'LANG_CUSTOM',
         defaultValue: '',

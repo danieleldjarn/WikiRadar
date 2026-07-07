@@ -37,6 +37,11 @@ void data_format_distance(int32_t meters, char *buf, size_t buf_len);
 void data_set_units(bool imperial);
 void data_load_units(void);
 
+// Read-article tracking: a persisted rolling set of title hashes
+void data_mark_read(const char *title);
+bool data_is_read(const char *title);
+void data_load_read_set(void);
+
 // Live distance (meters) / bearing (Pebble trig angle, clockwise from north)
 // from the current location to an article. Distance falls back to the
 // fetch-time value when no GPS fix has arrived yet.

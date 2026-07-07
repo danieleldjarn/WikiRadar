@@ -7,6 +7,7 @@ bool g_units_imperial = false;
 
 // Persist keys 1..50 belong to cache.c
 #define PKEY_UNITS 60
+#define PKEY_READ_SET 61
 
 void data_set_units(bool imperial) {
   g_units_imperial = imperial;
@@ -15,6 +16,47 @@ void data_set_units(bool imperial) {
 
 void data_load_units(void) {
   g_units_imperial = persist_read_bool(PKEY_UNITS);
+}
+
+// Rolling set of FNV-1a title hashes; oldest entries get overwritten.
+#define READ_SET_SIZE 30
+typedef struct {
+  uint8_t next;
+  uint32_t hashes[READ_SET_SIZE];
+} ReadSet;  // 124 bytes, fits one persist value
+
+static ReadSet s_read_set;
+
+static uint32_t prv_title_hash(const char *s) {
+  uint32_t h = 2166136261u;
+  while (*s) {
+    h ^= (uint8_t)*s++;
+    h *= 16777619u;
+  }
+  return h;
+}
+
+bool data_is_read(const char *title) {
+  uint32_t h = prv_title_hash(title);
+  for (int i = 0; i < READ_SET_SIZE; i++) {
+    if (s_read_set.hashes[i] == h) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void data_mark_read(const char *title) {
+  if (data_is_read(title)) {
+    return;
+  }
+  s_read_set.hashes[s_read_set.next] = prv_title_hash(title);
+  s_read_set.next = (s_read_set.next + 1) % READ_SET_SIZE;
+  persist_write_data(PKEY_READ_SET, &s_read_set, sizeof(s_read_set));
+}
+
+void data_load_read_set(void) {
+  persist_read_data(PKEY_READ_SET, &s_read_set, sizeof(s_read_set));
 }
 int32_t g_cur_lat = 0;
 int32_t g_cur_lon = 0;
