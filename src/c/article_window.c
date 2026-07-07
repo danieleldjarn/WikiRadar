@@ -78,6 +78,27 @@ static void prv_layout(void) {
 
   int16_t title_h =
       prv_text_height(s_article.title, FONT_KEY_GOTHIC_24_BOLD, width);
+#ifdef PBL_ROUND
+  // Flowed text can take more lines than the rectangular measurement
+  title_h += title_h / 2;
+#endif
+
+  int body_y;
+#ifdef PBL_ROUND
+  // Page 1 is a "cover" (title + distance + coords, centered); the body
+  // starts exactly at the next page boundary so the flow engine breaks
+  // pages between lines instead of clipping them at the bezel.
+  int title_y = 18;
+  layer_set_frame(text_layer_get_layer(s_title_layer),
+                  GRect(MARGIN, title_y, width, title_h + 8));
+  int dist_y = title_y + title_h + 10;
+  layer_set_frame(text_layer_get_layer(s_dist_layer),
+                  GRect(MARGIN, dist_y, width, DIST_ROW_H));
+  int coord_y = dist_y + DIST_ROW_H - 2;
+  layer_set_frame(text_layer_get_layer(s_coord_layer),
+                  GRect(MARGIN, coord_y, width, COORD_ROW_H));
+  body_y = bounds.size.h;
+#else
   layer_set_frame(text_layer_get_layer(s_title_layer),
                   GRect(MARGIN, 0, width, title_h + 8));
 
@@ -86,8 +107,6 @@ static void prv_layout(void) {
   layer_set_frame(text_layer_get_layer(s_dist_layer),
                   GRect(MARGIN + GLYPH_W + 2, dist_y, width - GLYPH_W - 2,
                         DIST_ROW_H));
-
-  int body_y;
   if (bounds.size.w < NARROW_W) {
     // Not enough room next to the distance; coordinates get their own row
     int coord_y = dist_y + DIST_ROW_H - 2;
@@ -101,13 +120,25 @@ static void prv_layout(void) {
                           width - GLYPH_W - 2, DIST_ROW_H));
     body_y = dist_y + DIST_ROW_H + 2;
   }
+#endif
   int16_t body_h = prv_text_height(text_layer_get_text(s_body_layer),
                                    FONT_KEY_GOTHIC_24, width);
+#ifdef PBL_ROUND
+  body_h += body_h / 2;
+#endif
   layer_set_frame(text_layer_get_layer(s_body_layer),
                   GRect(MARGIN, body_y, width, body_h + 12));
 
-  scroll_layer_set_content_size(
-      s_scroll, GSize(bounds.size.w, body_y + body_h + 16));
+  int total_h = body_y + body_h + 16;
+#ifdef PBL_ROUND
+  // Paged scrolling snaps by screenfuls; round content up to a full page
+  total_h = ((total_h + bounds.size.h - 1) / bounds.size.h) * bounds.size.h;
+  // The flow/paging origin is captured at enable time, so re-enable after
+  // the frames have moved to their final positions
+  text_layer_enable_screen_text_flow_and_paging(s_title_layer, 8);
+  text_layer_enable_screen_text_flow_and_paging(s_body_layer, 8);
+#endif
+  scroll_layer_set_content_size(s_scroll, GSize(bounds.size.w, total_h));
 }
 
 static void prv_select_handler(ClickRecognizerRef recognizer, void *context) {
@@ -166,9 +197,13 @@ static void prv_window_load(Window *window) {
                       fonts_get_system_font(FONT_KEY_GOTHIC_14));
   text_layer_set_text_color(s_coord_layer, GColorDarkGray);
   text_layer_set_background_color(s_coord_layer, GColorClear);
+#ifdef PBL_ROUND
+  text_layer_set_text_alignment(s_coord_layer, GTextAlignmentCenter);
+#else
   text_layer_set_text_alignment(s_coord_layer, bounds.size.w < NARROW_W
                                                    ? GTextAlignmentLeft
                                                    : GTextAlignmentRight);
+#endif
   char lat_buf[12], lon_buf[12];
   prv_format_coord(s_article.lat, lat_buf, sizeof(lat_buf));
   prv_format_coord(s_article.lon, lon_buf, sizeof(lon_buf));
@@ -183,6 +218,19 @@ static void prv_window_load(Window *window) {
   scroll_layer_add_child(s_scroll, text_layer_get_layer(s_body_layer));
 
   layer_add_child(root, scroll_layer_get_layer(s_scroll));
+
+#ifdef PBL_ROUND
+  scroll_layer_set_paging(s_scroll, true);
+  layer_set_hidden(s_glyph_layer, true);
+  text_layer_set_text_alignment(s_title_layer, GTextAlignmentCenter);
+  text_layer_set_text_alignment(s_dist_layer, GTextAlignmentCenter);
+  text_layer_set_font(s_body_layer,
+                      fonts_get_system_font(FONT_KEY_GOTHIC_24));
+  // Must be called after the layers are in the view hierarchy
+  text_layer_enable_screen_text_flow_and_paging(s_title_layer, 8);
+  text_layer_enable_screen_text_flow_and_paging(s_body_layer, 8);
+#endif
+
   prv_layout();
 }
 

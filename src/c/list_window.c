@@ -19,6 +19,12 @@ static void prv_draw_header(GContext *ctx, const Layer *cell_layer,
   GFont font = fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD);
   graphics_context_set_text_color(ctx, GColorBlack);
 
+#ifdef PBL_ROUND
+  // No corners on a round display; center the status, skip the clock
+  graphics_draw_text(ctx, s_header, font, GRect(0, -3, bounds.size.w, 16),
+                     GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter,
+                     NULL);
+#else
   // Left: fetch status ("Loc update at 12:04")
   graphics_draw_text(ctx, s_header, font,
                      GRect(2, -3, bounds.size.w - 56, 16),
@@ -40,6 +46,7 @@ static void prv_draw_header(GContext *ctx, const Layer *cell_layer,
                      GRect(bounds.size.w - 40, -3, 38, 16),
                      GTextOverflowModeTrailingEllipsis, GTextAlignmentRight,
                      NULL);
+#endif
 }
 
 static void prv_tick(struct tm *tick_time, TimeUnits units_changed) {

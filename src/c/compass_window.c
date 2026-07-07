@@ -42,10 +42,14 @@ static void prv_update_status(void) {
 static void prv_dial_update(Layer *layer, GContext *ctx) {
   GRect bounds = layer_get_bounds(layer);
   GPoint center = grect_center_point(&bounds);
+  int radius = bounds.size.h / 2 - 2;
+  if (radius > DIAL_RADIUS) {
+    radius = DIAL_RADIUS;
+  }
 
   graphics_context_set_stroke_color(ctx, GColorLightGray);
   graphics_context_set_stroke_width(ctx, 2);
-  graphics_draw_circle(ctx, center, DIAL_RADIUS);
+  graphics_draw_circle(ctx, center, radius);
 
   if (!s_heading_valid || !g_has_location) {
     return;
@@ -97,6 +101,10 @@ static void prv_window_load(Window *window) {
   text_layer_set_overflow_mode(s_title_layer, GTextOverflowModeTrailingEllipsis);
   text_layer_set_text(s_title_layer, s_article.title);
   layer_add_child(root, text_layer_get_layer(s_title_layer));
+#ifdef PBL_ROUND
+  // Flow the title inside the circle instead of clipping at the bezel
+  text_layer_enable_screen_text_flow_and_paging(s_title_layer, 4);
+#endif
 
   int dial_h = bounds.size.h - TITLE_H - DIST_H;
   s_dial_layer = layer_create(GRect(0, TITLE_H, bounds.size.w, dial_h));

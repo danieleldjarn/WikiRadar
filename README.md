@@ -1,8 +1,11 @@
 # nearby-wiki
 A PebbleOS app that shows you nearby Wikipedia entries based on your location.
 
-Targets the Pebble Time 2 (emery). The watchapp is written in C; the phone-side
-companion (PebbleKit JS) handles GPS and Wikipedia API calls.
+Supports all PebbleOS watches: the originals (aplite), Pebble Time (basalt),
+Time Round (chalk), Pebble 2 (diorite), and the Core Devices Pebble Time 2
+(emery), Pebble 2 Duo (flint), and Pebble Round 2 (gabbro). The watchapp is
+written in C; the phone-side companion (PebbleKit JS) handles GPS and
+Wikipedia API calls.
 
 ## Building & running
 
