@@ -4,6 +4,58 @@ Article g_articles[MAX_ARTICLES];
 int g_article_count = 0;
 char g_summary[MAX_SUMMARY_LEN];
 bool g_units_imperial = false;
+int32_t g_cur_lat = 0;
+int32_t g_cur_lon = 0;
+bool g_has_location = false;
+
+// Equirectangular deltas from current location to the article, in units of
+// 1e-5 degrees of latitude (~1.11 m each); dx east, dy north.
+static void prv_deltas(int index, int32_t *out_dx, int32_t *out_dy) {
+  Article *a = &g_articles[index];
+  int32_t dlat = a->lat - g_cur_lat;
+  int32_t dlon = a->lon - g_cur_lon;
+  int32_t lat_angle =
+      (int32_t)((int64_t)g_cur_lat * TRIG_MAX_ANGLE / 36000000);
+  int32_t coslat = cos_lookup(lat_angle);
+  *out_dx = (int32_t)((int64_t)dlon * coslat / TRIG_MAX_RATIO);
+  *out_dy = dlat;
+}
+
+static int64_t prv_isqrt(int64_t v) {
+  if (v <= 0) {
+    return 0;
+  }
+  int64_t x = v, y = (x + 1) / 2;
+  while (y < x) {
+    x = y;
+    y = (x + v / x) / 2;
+  }
+  return x;
+}
+
+int32_t data_distance_to_article(int index) {
+  if (!g_has_location) {
+    return g_articles[index].distance_m;
+  }
+  int32_t dx, dy;
+  prv_deltas(index, &dx, &dy);
+  int64_t d2 = (int64_t)dx * dx + (int64_t)dy * dy;
+  return (int32_t)(prv_isqrt(d2) * 111 / 100);
+}
+
+int32_t data_bearing_to_article(int index) {
+  int32_t dx, dy;
+  prv_deltas(index, &dx, &dy);
+  while (dx > INT16_MAX || dx < INT16_MIN || dy > INT16_MAX ||
+         dy < INT16_MIN) {
+    dx /= 2;
+    dy /= 2;
+  }
+  if (dx == 0 && dy == 0) {
+    return 0;
+  }
+  return atan2_lookup(dx, dy);
+}
 
 void data_format_distance(int32_t meters, char *buf, size_t buf_len) {
   if (g_units_imperial) {

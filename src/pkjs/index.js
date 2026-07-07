@@ -9,6 +9,7 @@ var CMD = {
   SUMMARY_CHUNK: 23,
   SUMMARY_DONE: 24,
   ERROR: 25,
+  LOC: 26,
 };
 
 var MAX_ARTICLES = 20;
@@ -16,42 +17,115 @@ var SEARCH_RADIUS_M = 10000; // geosearch API maximum
 var SUMMARY_MAX_CHARS = 2000;
 var CHUNK_SIZE = 400;
 var SEND_RETRIES = 3;
+var LOC_SEND_INTERVAL_MS = 3000;
+var LOC_MAX_AGE_MS = 30000;
+
+// Debug override for the emulator's fixed fake GPS: [lat, lon] or null
+var FAKE_LOC = null; // e.g. [64.14660, -21.94260] for emulator testing
 
 var articles = [];
+var lastPos = null;
+var lastLocSentAt = 0;
 
-function getLang() {
-  return localStorage.getItem('lang') || 'en';
+// ---- Single ordered send queue -------------------------------------------
+// AppMessage allows one message in flight; everything (list items, summary
+// chunks, location pushes) goes through one queue so streams never collide.
+var queue = [];
+var sending = false;
+
+function enqueue(msgs) {
+  queue = queue.concat(msgs);
+  if (!sending) {
+    pump(SEND_RETRIES);
+  }
 }
 
-function sendError(msg) {
-  console.log('Error: ' + msg);
-  Pebble.sendAppMessage({ CMD: CMD.ERROR, ERROR: msg });
-}
-
-// Send messages strictly one at a time; AppMessage allows a single
-// message in flight, and ordering matters for list items and chunks.
-function sendQueue(queue, retriesLeft) {
-  if (queue.length === 0) return;
-  if (retriesLeft === undefined) retriesLeft = SEND_RETRIES;
+function pump(retriesLeft) {
+  if (queue.length === 0) {
+    sending = false;
+    return;
+  }
+  sending = true;
   var msg = queue[0];
   Pebble.sendAppMessage(
     msg,
     function () {
       queue.shift();
-      sendQueue(queue);
+      pump(SEND_RETRIES);
     },
     function () {
       if (retriesLeft > 0) {
         setTimeout(function () {
-          sendQueue(queue, retriesLeft - 1);
+          pump(retriesLeft - 1);
         }, 250);
       } else {
         console.log('Dropping message after retries: ' + JSON.stringify(msg));
         queue.shift();
-        sendQueue(queue);
+        pump(SEND_RETRIES);
       }
     }
   );
+}
+
+function sendError(msg) {
+  console.log('Error: ' + msg);
+  enqueue([{ CMD: CMD.ERROR, ERROR: msg }]);
+}
+
+// ---- Location --------------------------------------------------------------
+
+function coordsOf(pos) {
+  if (FAKE_LOC) {
+    return { latitude: FAKE_LOC[0], longitude: FAKE_LOC[1] };
+  }
+  return pos.coords;
+}
+
+function startLocationStream() {
+  navigator.geolocation.watchPosition(
+    function (pos) {
+      pos.receivedAt = Date.now();
+      lastPos = pos;
+      var now = Date.now();
+      if (now - lastLocSentAt >= LOC_SEND_INTERVAL_MS) {
+        lastLocSentAt = now;
+        var c = coordsOf(pos);
+        enqueue([{
+          CMD: CMD.LOC,
+          LOC_LAT: Math.round(c.latitude * 100000),
+          LOC_LON: Math.round(c.longitude * 100000),
+        }]);
+      }
+    },
+    function (err) {
+      console.log('watchPosition error: ' + err.message);
+    },
+    { enableHighAccuracy: true, maximumAge: 1000, timeout: 30000 }
+  );
+}
+
+function getLocation(cb) {
+  if (lastPos && Date.now() - lastPos.receivedAt < LOC_MAX_AGE_MS) {
+    cb(null, coordsOf(lastPos));
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    function (pos) {
+      pos.receivedAt = Date.now();
+      lastPos = pos;
+      cb(null, coordsOf(pos));
+    },
+    function (err) {
+      cb(err);
+    },
+    { timeout: 15000, maximumAge: 60000, enableHighAccuracy: true }
+  );
+}
+
+// ---- Wikipedia --------------------------------------------------------------
+
+function getLang() {
+  return localStorage.getItem('lang') || 'en';
 }
 
 function fetchJSON(url, cb) {
@@ -78,18 +152,6 @@ function fetchJSON(url, cb) {
   xhr.send();
 }
 
-function getLocation(cb) {
-  navigator.geolocation.getCurrentPosition(
-    function (pos) {
-      cb(null, pos.coords);
-    },
-    function (err) {
-      cb(err);
-    },
-    { timeout: 15000, maximumAge: 60000, enableHighAccuracy: true }
-  );
-}
-
 function handleGetList() {
   getLocation(function (err, coords) {
     if (err) {
@@ -110,7 +172,12 @@ function handleGetList() {
         return;
       }
       articles = json.query.geosearch;
-      var msgs = [{ CMD: CMD.LIST_START, COUNT: articles.length }];
+      var msgs = [{
+        CMD: CMD.LIST_START,
+        COUNT: articles.length,
+        LOC_LAT: Math.round(coords.latitude * 100000),
+        LOC_LON: Math.round(coords.longitude * 100000),
+      }];
       articles.forEach(function (a, i) {
         msgs.push({
           CMD: CMD.LIST_ITEM,
@@ -122,7 +189,7 @@ function handleGetList() {
         });
       });
       msgs.push({ CMD: CMD.LIST_DONE });
-      sendQueue(msgs);
+      enqueue(msgs);
     });
   });
 }
@@ -154,13 +221,14 @@ function handleGetSummary(index) {
       });
     }
     msgs.push({ CMD: CMD.SUMMARY_DONE, INDEX: index });
-    sendQueue(msgs);
+    enqueue(msgs);
   });
 }
 
 Pebble.addEventListener('ready', function () {
   console.log('PKJS ready');
-  sendQueue([{ CMD: CMD.READY }]);
+  startLocationStream();
+  enqueue([{ CMD: CMD.READY }]);
 });
 
 Pebble.addEventListener('appmessage', function (e) {

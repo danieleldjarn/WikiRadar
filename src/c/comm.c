@@ -3,6 +3,7 @@
 #include "data.h"
 #include "list_window.h"
 #include "article_window.h"
+#include "compass_window.h"
 
 // CMD values shared with src/pkjs/index.js
 enum {
@@ -15,7 +16,18 @@ enum {
   CMD_SUMMARY_CHUNK = 23,
   CMD_SUMMARY_DONE = 24,
   CMD_ERROR = 25,
+  CMD_LOC = 26,
 };
+
+static void prv_update_location(DictionaryIterator *iter) {
+  Tuple *lat = dict_find(iter, MESSAGE_KEY_LOC_LAT);
+  Tuple *lon = dict_find(iter, MESSAGE_KEY_LOC_LON);
+  if (lat && lon) {
+    g_cur_lat = lat->value->int32;
+    g_cur_lon = lon->value->int32;
+    g_has_location = true;
+  }
+}
 
 static bool s_js_ready = false;
 static bool s_list_pending = false;
@@ -107,6 +119,7 @@ static void prv_inbox_received(DictionaryIterator *iter, void *context) {
       break;
     case CMD_LIST_START:
       g_article_count = 0;
+      prv_update_location(iter);
       list_window_set_status("Loading nearby...");
       break;
     case CMD_LIST_ITEM:
@@ -125,6 +138,11 @@ static void prv_inbox_received(DictionaryIterator *iter, void *context) {
       break;
     case CMD_SUMMARY_DONE:
       article_window_on_summary(true);
+      break;
+    case CMD_LOC:
+      prv_update_location(iter);
+      compass_window_on_location();
+      article_window_on_location();
       break;
     case CMD_ERROR: {
       Tuple *error = dict_find(iter, MESSAGE_KEY_ERROR);
