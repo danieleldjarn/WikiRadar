@@ -1,3 +1,5 @@
 build/
 .lock-waf*
 node_modules/
+screenshots/*
+!screenshots/store/
