@@ -66,11 +66,41 @@ d.text((380, 218), 'Nearby articles · compass · offline',
 
 img.convert('RGB').save('store-assets/banner.png')
 
-# ---- Large icon (144x144) ---------------------------------------------------
-icon = Image.new('RGBA', (144, 144), (0, 0, 0, 0))
-di = ImageDraw.Draw(icon)
-di.rounded_rectangle([0, 0, 143, 143], radius=30, fill=CERULEAN)
-di.ellipse([22, 22, 121, 121], outline=(255, 255, 255), width=8)
-di.polygon([(94, 42), (62, 100), (69, 71), (40, 74)], fill=(255, 255, 255))
-icon.save('store-assets/icon-large.png')
-print('assets written')
+# ---- Icons: radar scope with sweep and blips --------------------------------
+
+def radar_icon(size, corner, ring_w, on_cerulean=True):
+    """Radar scope: ring, sweep wedge with leading edge, and blips."""
+    img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    fg = (255, 255, 255, 255) if on_cerulean else (0, 0, 0, 255)
+    if on_cerulean:
+        d.rounded_rectangle([0, 0, size - 1, size - 1], radius=corner,
+                            fill=CERULEAN)
+    c = size / 2
+    r = size * 0.36
+    d.ellipse([c - r, c - r, c + r, c + r], outline=fg, width=ring_w)
+    # Sweep wedge, pointing up-right, fading trail
+    if size >= 48:
+        for spread, alpha in ((50, 60), (28, 110)):
+            d.pieslice([c - r, c - r, c + r, c + r],
+                       start=-60 - spread, end=-60,
+                       fill=fg[:3] + (alpha,))
+    # Leading edge of the sweep
+    edge = math.radians(-60)
+    d.line([c, c, c + r * math.cos(edge), c + r * math.sin(edge)],
+           fill=fg, width=max(ring_w - 1, 2))
+    # Center dot
+    cd = max(size // 24, 1)
+    d.ellipse([c - cd, c - cd, c + cd, c + cd], fill=fg)
+    # Blips
+    for fx, fy in ((-0.16, -0.14), (0.13, 0.17)):
+        bx, by = c + fx * size, c + fy * size
+        br = max(size // 20, 1)
+        d.ellipse([bx - br, by - br, bx + br, by + br], fill=fg)
+    return img
+
+radar_icon(144, 30, 7).save('store-assets/icon-large.png')
+radar_icon(48, 10, 3).save('store-assets/icon-small.png')
+# Menu icon: black on transparent for the launcher (B&W friendly)
+radar_icon(25, 0, 2, on_cerulean=False).save('resources/images/icon.png')
+print('icons written')

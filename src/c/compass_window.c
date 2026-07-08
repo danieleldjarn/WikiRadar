@@ -1,9 +1,17 @@
 #include "compass_window.h"
 #include "data.h"
 
+// Round screens: the chord at the top is short, so the title needs two
+// flowed lines to fit anything real
+#ifdef PBL_ROUND
+#define TITLE_H 44
+#else
 #define TITLE_H 32
+#endif
 #define DIST_H 36
-#define DIAL_RADIUS 58
+// The arrow path below is drawn for this dial size; both scale to the
+// actual dial radius at window load
+#define ARROW_BASE_RADIUS 58
 
 // Radar ping: a ring expands from the center to the dial edge, then
 // pauses before the next sweep
@@ -25,11 +33,14 @@ static AppTimer *s_ping_timer;
 static int s_ping_radius = -1;  // -1 = between pings
 
 // Arrow pointing up (north) before rotation; sized to leave room for
-// the cardinal letters at the dial rim
+// the cardinal letters at the rim of an ARROW_BASE_RADIUS dial
+#define ARROW_POINTS 7
+static const GPoint ARROW_BASE[ARROW_POINTS] = {
+    {0, -38}, {19, 3}, {7, 3}, {7, 35}, {-7, 35}, {-7, 3}, {-19, 3}};
+static GPoint s_arrow_points[ARROW_POINTS];
 static const GPathInfo ARROW_PATH_INFO = {
-    .num_points = 7,
-    .points = (GPoint[]){
-        {0, -38}, {19, 3}, {7, 3}, {7, 35}, {-7, 35}, {-7, 3}, {-19, 3}},
+    .num_points = ARROW_POINTS,
+    .points = s_arrow_points,
 };
 
 static void prv_update_distance(void) {
@@ -50,8 +61,8 @@ static void prv_update_status(void) {
 
 static int prv_dial_radius(void) {
   GRect bounds = layer_get_bounds(s_dial_layer);
-  int radius = bounds.size.h / 2 - 2;
-  return radius > DIAL_RADIUS ? DIAL_RADIUS : radius;
+  int limit = bounds.size.h < bounds.size.w ? bounds.size.h : bounds.size.w;
+  return limit / 2 - 2;
 }
 
 static void prv_ping_tick(void *context) {
@@ -73,20 +84,23 @@ static void prv_ping_tick(void *context) {
 // heading, so N marks true north on screen
 static void prv_draw_rose(GContext *ctx, GPoint center, int radius) {
   static const char *CARDINALS[] = {"N", "E", "S", "W"};
-  GFont font = fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD);
+  bool big = radius >= 70;
+  GFont font = fonts_get_system_font(big ? FONT_KEY_GOTHIC_18_BOLD
+                                         : FONT_KEY_GOTHIC_14_BOLD);
   for (int i = 0; i < 12; i++) {
     int32_t angle = (s_heading + i * TRIG_MAX_ANGLE / 12) % TRIG_MAX_ANGLE;
     int32_t sin_v = sin_lookup(angle);
     int32_t cos_v = cos_lookup(angle);
     if (i % 3 == 0) {
-      int lr = radius - 13;
+      int lr = radius - (big ? 17 : 13);
       GPoint p = GPoint(center.x + sin_v * lr / TRIG_MAX_RATIO,
                         center.y - cos_v * lr / TRIG_MAX_RATIO);
       graphics_context_set_text_color(
           ctx, i == 0 ? PBL_IF_COLOR_ELSE(GColorVividCerulean, GColorBlack)
                       : GColorDarkGray);
       graphics_draw_text(ctx, CARDINALS[i / 3], font,
-                         GRect(p.x - 9, p.y - 10, 18, 18),
+                         big ? GRect(p.x - 10, p.y - 12, 20, 22)
+                             : GRect(p.x - 9, p.y - 10, 18, 18),
                          GTextOverflowModeTrailingEllipsis,
                          GTextAlignmentCenter, NULL);
     } else {
@@ -199,6 +213,12 @@ static void prv_window_load(Window *window) {
   text_layer_set_text_alignment(s_dist_layer, GTextAlignmentCenter);
   layer_add_child(root, text_layer_get_layer(s_dist_layer));
 
+  // Scale the arrow to the dial this screen actually gives us
+  int radius = prv_dial_radius();
+  for (int i = 0; i < ARROW_POINTS; i++) {
+    s_arrow_points[i] = GPoint(ARROW_BASE[i].x * radius / ARROW_BASE_RADIUS,
+                               ARROW_BASE[i].y * radius / ARROW_BASE_RADIUS);
+  }
   s_arrow = gpath_create(&ARROW_PATH_INFO);
   prv_update_distance();
   prv_update_status();
