@@ -24,11 +24,12 @@ static char s_dist_text[24];
 static AppTimer *s_ping_timer;
 static int s_ping_radius = -1;  // -1 = between pings
 
-// Arrow pointing up (north) before rotation; roughly 100px tall
+// Arrow pointing up (north) before rotation; sized to leave room for
+// the cardinal letters at the dial rim
 static const GPathInfo ARROW_PATH_INFO = {
     .num_points = 7,
     .points = (GPoint[]){
-        {0, -48}, {24, 4}, {9, 4}, {9, 44}, {-9, 44}, {-9, 4}, {-24, 4}},
+        {0, -38}, {19, 3}, {7, 3}, {7, 35}, {-7, 35}, {-7, 3}, {-19, 3}},
 };
 
 static void prv_update_distance(void) {
@@ -68,6 +69,38 @@ static void prv_ping_tick(void *context) {
   layer_mark_dirty(s_dial_layer);
 }
 
+// Compass rose: cardinal letters and minor ticks rotating with the
+// heading, so N marks true north on screen
+static void prv_draw_rose(GContext *ctx, GPoint center, int radius) {
+  static const char *CARDINALS[] = {"N", "E", "S", "W"};
+  GFont font = fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD);
+  for (int i = 0; i < 12; i++) {
+    int32_t angle = (s_heading + i * TRIG_MAX_ANGLE / 12) % TRIG_MAX_ANGLE;
+    int32_t sin_v = sin_lookup(angle);
+    int32_t cos_v = cos_lookup(angle);
+    if (i % 3 == 0) {
+      int lr = radius - 13;
+      GPoint p = GPoint(center.x + sin_v * lr / TRIG_MAX_RATIO,
+                        center.y - cos_v * lr / TRIG_MAX_RATIO);
+      graphics_context_set_text_color(
+          ctx, i == 0 ? PBL_IF_COLOR_ELSE(GColorVividCerulean, GColorBlack)
+                      : GColorDarkGray);
+      graphics_draw_text(ctx, CARDINALS[i / 3], font,
+                         GRect(p.x - 9, p.y - 10, 18, 18),
+                         GTextOverflowModeTrailingEllipsis,
+                         GTextAlignmentCenter, NULL);
+    } else {
+      GPoint p1 = GPoint(center.x + sin_v * (radius - 6) / TRIG_MAX_RATIO,
+                         center.y - cos_v * (radius - 6) / TRIG_MAX_RATIO);
+      GPoint p2 = GPoint(center.x + sin_v * (radius - 2) / TRIG_MAX_RATIO,
+                         center.y - cos_v * (radius - 2) / TRIG_MAX_RATIO);
+      graphics_context_set_stroke_color(ctx, GColorDarkGray);
+      graphics_context_set_stroke_width(ctx, 1);
+      graphics_draw_line(ctx, p1, p2);
+    }
+  }
+}
+
 static void prv_dial_update(Layer *layer, GContext *ctx) {
   GRect bounds = layer_get_bounds(layer);
   GPoint center = grect_center_point(&bounds);
@@ -83,6 +116,7 @@ static void prv_dial_update(Layer *layer, GContext *ctx) {
   graphics_context_set_stroke_color(ctx, GColorLightGray);
   graphics_context_set_stroke_width(ctx, 2);
   graphics_draw_circle(ctx, center, radius);
+  prv_draw_rose(ctx, center, radius);
 
   if (!s_heading_valid || !g_has_location) {
     return;
