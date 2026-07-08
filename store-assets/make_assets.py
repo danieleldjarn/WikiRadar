@@ -119,7 +119,7 @@ def radar_icon(size, corner, ring_w, on_cerulean=True):
     return img
 
 radar_icon(144, 30, 7).save('store-assets/icon-large.png')
-radar_icon(48, 10, 3).save('store-assets/icon-small.png')
+radar_icon(80, 17, 4).save('store-assets/icon-small.png')
 # Menu icon: black on transparent for the launcher (B&W friendly)
 radar_icon(25, 0, 2, on_cerulean=False).save('resources/images/icon.png')
 print('icons written')
