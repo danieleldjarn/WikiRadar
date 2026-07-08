@@ -53,9 +53,19 @@ for bx, by, r in ((265, 95, 6), (150, 210, 5), (110, 120, 4)):
     d.ellipse([bx - r - 4, by - r - 4, bx + r + 4, by + r + 4],
               outline=CERULEAN + (90,), width=2)
 
-# Center needle (the app glyph)
-d.polygon([(cx + 16, cy - 22), (cx - 8, cy + 20), (cx - 2, cy - 1),
-           (cx - 24, cy - 4)], fill=(255, 255, 255))
+# Center "W" (Wikipedia) at the radar's heart, in a serif to echo the
+# Wikipedia wordmark
+def serif_font(size):
+    for p in ('/System/Library/Fonts/Supplemental/Georgia Bold.ttf',
+              '/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf'):
+        try:
+            return ImageFont.truetype(p, size)
+        except OSError:
+            continue
+    return font(size, bold=True)
+
+d.text((cx, cy), 'W', font=serif_font(64), fill=(255, 255, 255),
+       anchor='mm')
 
 # Title + tagline
 d.text((378, 96), 'WikiRadar', font=font(60, bold=True), fill=(255, 255, 255))
