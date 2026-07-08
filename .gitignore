@@ -3,3 +3,4 @@ build/
 node_modules/
 screenshots/*
 !screenshots/store/
+.DS_Store
