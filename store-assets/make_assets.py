@@ -102,9 +102,17 @@ def radar_icon(size, corner, ring_w, on_cerulean=True):
     # Center dot
     cd = max(size // 26, 1)
     d.ellipse([c - cd, c - cd, c + cd, c + cd], fill=fg)
-    # Blips, off the crosshair axes
-    for fx, fy in ((-0.17, -0.12), (0.14, 0.16), (0.10, -0.20)):
-        bx, by = c + fx * size, c + fy * size
+    # Blips: centered in the open annuli between rings (ring radii are
+    # 0.21 / [0.30 at >=96px] / 0.38 of size), on diagonals clear of the
+    # crosshair lines
+    if size >= 96:
+        blips = ((-140, 0.25), (35, 0.34), (115, 0.25))
+    else:
+        blips = ((-140, 0.28), (35, 0.28), (115, 0.28))
+    for ang, dist in blips:
+        a = math.radians(ang)
+        bx = c + dist * size * math.cos(a)
+        by = c + dist * size * math.sin(a)
         br = max(size // 22, 1)
         d.ellipse([bx - br, by - br, bx + br, by + br], fill=fg)
     return img
