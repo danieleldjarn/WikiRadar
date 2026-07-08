@@ -106,9 +106,10 @@ def radar_icon(size, corner, ring_w, on_cerulean=True):
     # 0.21 / [0.30 at >=96px] / 0.38 of size), on diagonals clear of the
     # crosshair lines
     if size >= 96:
-        blips = ((-140, 0.25), (35, 0.34), (115, 0.25))
+        # One inside the innermost ring, one per annulus
+        blips = ((-140, 0.13), (35, 0.25), (115, 0.34))
     else:
-        blips = ((-140, 0.28), (35, 0.28), (115, 0.28))
+        blips = ((-140, 0.13), (35, 0.28), (115, 0.28))
     for ang, dist in blips:
         a = math.radians(ang)
         bx = c + dist * size * math.cos(a)
