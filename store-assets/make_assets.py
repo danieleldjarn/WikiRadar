@@ -79,7 +79,11 @@ img.convert('RGB').save('store-assets/banner.png')
 # ---- Icons: radar scope with sweep and blips --------------------------------
 
 def radar_icon(size, corner, ring_w, on_cerulean=True):
-    """Radar scope: range rings, crosshairs, sweep trail, and blips."""
+    """Radar scope: range rings, crosshairs, sweep trail, and blips.
+
+    Translucent elements are drawn on overlays and alpha-composited;
+    drawing them directly would punch low-alpha holes in the background.
+    """
     img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
     fg = (255, 255, 255, 255) if on_cerulean else (0, 0, 0, 255)
@@ -90,26 +94,35 @@ def radar_icon(size, corner, ring_w, on_cerulean=True):
     c = size / 2
     r = size * 0.38
     thin = max(ring_w // 2, 1)
-    # Crosshairs, clipped to the scope
-    d.line([c - r, c, c + r, c], fill=faint, width=thin)
-    d.line([c, c - r, c, c + r], fill=faint, width=thin)
-    # Range rings: inner ring(s) + outer ring on top
-    d.ellipse([c - r * 0.55, c - r * 0.55, c + r * 0.55, c + r * 0.55],
-              outline=faint, width=thin)
+
+    # Overlay 1: crosshairs and inner range rings
+    ov = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+    od = ImageDraw.Draw(ov)
+    od.line([c - r, c, c + r, c], fill=faint, width=thin)
+    od.line([c, c - r, c, c + r], fill=faint, width=thin)
+    od.ellipse([c - r * 0.55, c - r * 0.55, c + r * 0.55, c + r * 0.55],
+               outline=faint, width=thin)
     if size >= 96:
-        d.ellipse([c - r * 0.78, c - r * 0.78, c + r * 0.78, c + r * 0.78],
-                  outline=faint, width=thin)
-    d.ellipse([c - r, c - r, c + r, c + r], outline=fg, width=ring_w)
-    # Sweep: fading trail wedge, thin leading edge (not a clock hand)
+        od.ellipse([c - r * 0.78, c - r * 0.78, c + r * 0.78, c + r * 0.78],
+                   outline=faint, width=thin)
+    img = Image.alpha_composite(img, ov)
+
+    # Overlay 2: sweep wedge with fading trail and thin leading edge
     if size >= 48 and on_cerulean:
+        ov = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+        od = ImageDraw.Draw(ov)
         for spread, alpha in ((55, 55), (30, 100)):
-            d.pieslice([c - r, c - r, c + r, c + r],
-                       start=-60 - spread, end=-60,
-                       fill=fg[:3] + (alpha,))
+            od.pieslice([c - r, c - r, c + r, c + r],
+                        start=-60 - spread, end=-60,
+                        fill=fg[:3] + (alpha,))
         edge = math.radians(-60)
-        d.line([c, c, c + r * math.cos(edge), c + r * math.sin(edge)],
-               fill=fg, width=thin)
-    # Center dot
+        od.line([c, c, c + r * math.cos(edge), c + r * math.sin(edge)],
+                fill=fg, width=thin)
+        img = Image.alpha_composite(img, ov)
+
+    # Opaque elements straight onto the result
+    d = ImageDraw.Draw(img)
+    d.ellipse([c - r, c - r, c + r, c + r], outline=fg, width=ring_w)
     cd = max(size // 26, 1)
     d.ellipse([c - cd, c - cd, c + cd, c + cd], fill=fg)
     # Blips: centered in the open annuli between rings (ring radii are
