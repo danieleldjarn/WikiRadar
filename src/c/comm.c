@@ -139,10 +139,10 @@ static void prv_inbox_received(DictionaryIterator *iter, void *context) {
       list_window_on_list_updated(false);
       break;
     case CMD_LIST_DONE:
+      g_list_fetch_time = time(NULL);
       if (g_article_count == 0) {
         list_window_set_status("Nothing nearby");
       } else {
-        g_list_fetch_time = time(NULL);
         cache_save_list();
       }
       list_window_show_fetch_time("Loc update at", "Upd");
@@ -167,6 +167,9 @@ static void prv_inbox_received(DictionaryIterator *iter, void *context) {
       const char *msg = error ? error->value->cstring : "Error";
       APP_LOG(APP_LOG_LEVEL_ERROR, "JS error: %s", msg);
       list_window_set_status(msg);
+      // Also surface in the header: the status row is hidden whenever a
+      // (possibly cached) list is on screen
+      list_window_set_header(msg);
       break;
     }
   }

@@ -284,12 +284,22 @@ function handleGetSummary(index) {
       text = text.substring(0, maxChars - 1) + '…';
     }
     var msgs = [];
-    for (var off = 0; off < text.length; off += CHUNK_SIZE) {
+    var off = 0;
+    while (off < text.length) {
+      var end = Math.min(off + CHUNK_SIZE, text.length);
+      // Don't split a surrogate pair (e.g. an emoji) across chunks
+      if (end < text.length) {
+        var c = text.charCodeAt(end - 1);
+        if (c >= 0xd800 && c <= 0xdbff) {
+          end--;
+        }
+      }
       msgs.push({
         CMD: CMD.SUMMARY_CHUNK,
         INDEX: index,
-        CHUNK: text.substring(off, off + CHUNK_SIZE),
+        CHUNK: text.substring(off, end),
       });
+      off = end;
     }
     msgs.push({ CMD: CMD.SUMMARY_DONE, INDEX: index });
     enqueue(msgs);

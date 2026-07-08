@@ -33,9 +33,6 @@ module.exports = [
           { label: 'Italiano', value: 'it' },
           { label: 'Português', value: 'pt' },
           { label: 'Polski', value: 'pl' },
-          { label: 'Русский', value: 'ru' },
-          { label: '日本語', value: 'ja' },
-          { label: '中文', value: 'zh' },
         ],
       },
       {
@@ -57,7 +54,9 @@ module.exports = [
         label: 'Language code override',
         description:
           'Any Wikipedia language code, e.g. "haw". Takes precedence over ' +
-          'the dropdown when set.',
+          'the dropdown when set. Note: the watch can only display ' +
+          'Latin-script text — Cyrillic, CJK, and similar scripts will ' +
+          'not render.',
         attributes: {
           placeholder: 'e.g. haw',
           limit: 8,
