@@ -69,33 +69,43 @@ img.convert('RGB').save('store-assets/banner.png')
 # ---- Icons: radar scope with sweep and blips --------------------------------
 
 def radar_icon(size, corner, ring_w, on_cerulean=True):
-    """Radar scope: ring, sweep wedge with leading edge, and blips."""
+    """Radar scope: range rings, crosshairs, sweep trail, and blips."""
     img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
     fg = (255, 255, 255, 255) if on_cerulean else (0, 0, 0, 255)
+    faint = fg[:3] + (110,) if on_cerulean else fg
     if on_cerulean:
         d.rounded_rectangle([0, 0, size - 1, size - 1], radius=corner,
                             fill=CERULEAN)
     c = size / 2
-    r = size * 0.36
+    r = size * 0.38
+    thin = max(ring_w // 2, 1)
+    # Crosshairs, clipped to the scope
+    d.line([c - r, c, c + r, c], fill=faint, width=thin)
+    d.line([c, c - r, c, c + r], fill=faint, width=thin)
+    # Range rings: inner ring(s) + outer ring on top
+    d.ellipse([c - r * 0.55, c - r * 0.55, c + r * 0.55, c + r * 0.55],
+              outline=faint, width=thin)
+    if size >= 96:
+        d.ellipse([c - r * 0.78, c - r * 0.78, c + r * 0.78, c + r * 0.78],
+                  outline=faint, width=thin)
     d.ellipse([c - r, c - r, c + r, c + r], outline=fg, width=ring_w)
-    # Sweep wedge, pointing up-right, fading trail
-    if size >= 48:
-        for spread, alpha in ((50, 60), (28, 110)):
+    # Sweep: fading trail wedge, thin leading edge (not a clock hand)
+    if size >= 48 and on_cerulean:
+        for spread, alpha in ((55, 55), (30, 100)):
             d.pieslice([c - r, c - r, c + r, c + r],
                        start=-60 - spread, end=-60,
                        fill=fg[:3] + (alpha,))
-    # Leading edge of the sweep
-    edge = math.radians(-60)
-    d.line([c, c, c + r * math.cos(edge), c + r * math.sin(edge)],
-           fill=fg, width=max(ring_w - 1, 2))
+        edge = math.radians(-60)
+        d.line([c, c, c + r * math.cos(edge), c + r * math.sin(edge)],
+               fill=fg, width=thin)
     # Center dot
-    cd = max(size // 24, 1)
+    cd = max(size // 26, 1)
     d.ellipse([c - cd, c - cd, c + cd, c + cd], fill=fg)
-    # Blips
-    for fx, fy in ((-0.16, -0.14), (0.13, 0.17)):
+    # Blips, off the crosshair axes
+    for fx, fy in ((-0.17, -0.12), (0.14, 0.16), (0.10, -0.20)):
         bx, by = c + fx * size, c + fy * size
-        br = max(size // 20, 1)
+        br = max(size // 22, 1)
         d.ellipse([bx - br, by - br, bx + br, by + br], fill=fg)
     return img
 
