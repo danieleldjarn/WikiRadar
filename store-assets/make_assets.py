@@ -53,9 +53,19 @@ for bx, by, r in ((265, 95, 6), (150, 210, 5), (110, 120, 4)):
     d.ellipse([bx - r - 4, by - r - 4, bx + r + 4, by + r + 4],
               outline=CERULEAN + (90,), width=2)
 
-# Center needle (the app glyph)
-d.polygon([(cx + 16, cy - 22), (cx - 8, cy + 20), (cx - 2, cy - 1),
-           (cx - 24, cy - 4)], fill=(255, 255, 255))
+# Center "W" (Wikipedia) at the radar's heart, in a serif to echo the
+# Wikipedia wordmark
+def serif_font(size):
+    for p in ('/System/Library/Fonts/Supplemental/Georgia Bold.ttf',
+              '/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf'):
+        try:
+            return ImageFont.truetype(p, size)
+        except OSError:
+            continue
+    return font(size, bold=True)
+
+d.text((cx, cy), 'W', font=serif_font(64), fill=(255, 255, 255),
+       anchor='mm')
 
 # Title + tagline
 d.text((378, 96), 'WikiRadar', font=font(60, bold=True), fill=(255, 255, 255))
@@ -66,11 +76,73 @@ d.text((380, 218), 'Nearby articles · compass · offline',
 
 img.convert('RGB').save('store-assets/banner.png')
 
-# ---- Large icon (144x144) ---------------------------------------------------
-icon = Image.new('RGBA', (144, 144), (0, 0, 0, 0))
-di = ImageDraw.Draw(icon)
-di.rounded_rectangle([0, 0, 143, 143], radius=30, fill=CERULEAN)
-di.ellipse([22, 22, 121, 121], outline=(255, 255, 255), width=8)
-di.polygon([(94, 42), (62, 100), (69, 71), (40, 74)], fill=(255, 255, 255))
-icon.save('store-assets/icon-large.png')
-print('assets written')
+# ---- Icons: radar scope with sweep and blips --------------------------------
+
+def radar_icon(size, corner, ring_w, on_cerulean=True):
+    """Radar scope: range rings, crosshairs, sweep trail, and blips.
+
+    Translucent elements are drawn on overlays and alpha-composited;
+    drawing them directly would punch low-alpha holes in the background.
+    """
+    img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    fg = (255, 255, 255, 255) if on_cerulean else (0, 0, 0, 255)
+    faint = fg[:3] + (110,) if on_cerulean else fg
+    if on_cerulean:
+        d.rounded_rectangle([0, 0, size - 1, size - 1], radius=corner,
+                            fill=CERULEAN)
+    c = size / 2
+    r = size * 0.38
+    thin = max(ring_w // 2, 1)
+
+    # Overlay 1: crosshairs and inner range rings
+    ov = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+    od = ImageDraw.Draw(ov)
+    od.line([c - r, c, c + r, c], fill=faint, width=thin)
+    od.line([c, c - r, c, c + r], fill=faint, width=thin)
+    od.ellipse([c - r * 0.55, c - r * 0.55, c + r * 0.55, c + r * 0.55],
+               outline=faint, width=thin)
+    if size >= 96:
+        od.ellipse([c - r * 0.78, c - r * 0.78, c + r * 0.78, c + r * 0.78],
+                   outline=faint, width=thin)
+    img = Image.alpha_composite(img, ov)
+
+    # Overlay 2: sweep wedge with fading trail and thin leading edge
+    if size >= 48 and on_cerulean:
+        ov = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+        od = ImageDraw.Draw(ov)
+        for spread, alpha in ((55, 55), (30, 100)):
+            od.pieslice([c - r, c - r, c + r, c + r],
+                        start=-60 - spread, end=-60,
+                        fill=fg[:3] + (alpha,))
+        edge = math.radians(-60)
+        od.line([c, c, c + r * math.cos(edge), c + r * math.sin(edge)],
+                fill=fg, width=thin)
+        img = Image.alpha_composite(img, ov)
+
+    # Opaque elements straight onto the result
+    d = ImageDraw.Draw(img)
+    d.ellipse([c - r, c - r, c + r, c + r], outline=fg, width=ring_w)
+    cd = max(size // 26, 1)
+    d.ellipse([c - cd, c - cd, c + cd, c + cd], fill=fg)
+    # Blips: centered in the open annuli between rings (ring radii are
+    # 0.21 / [0.30 at >=96px] / 0.38 of size), on diagonals clear of the
+    # crosshair lines
+    if size >= 96:
+        # One inside the innermost ring, one per annulus
+        blips = ((-140, 0.13), (35, 0.25), (115, 0.34))
+    else:
+        blips = ((-140, 0.13), (35, 0.28), (115, 0.28))
+    for ang, dist in blips:
+        a = math.radians(ang)
+        bx = c + dist * size * math.cos(a)
+        by = c + dist * size * math.sin(a)
+        br = max(size // 22, 1)
+        d.ellipse([bx - br, by - br, bx + br, by + br], fill=fg)
+    return img
+
+radar_icon(144, 30, 7).save('store-assets/icon-large.png')
+radar_icon(80, 17, 4).save('store-assets/icon-small.png')
+# Menu icon: black on transparent for the launcher (B&W friendly)
+radar_icon(25, 0, 2, on_cerulean=False).save('resources/images/icon.png')
+print('icons written')

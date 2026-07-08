@@ -85,10 +85,14 @@ static void prv_layout(void) {
 
   int body_y;
 #ifdef PBL_ROUND
-  // Page 1 is a "cover" (title + distance + coords, centered); the body
-  // starts exactly at the next page boundary so the flow engine breaks
-  // pages between lines instead of clipping them at the bezel.
-  int title_y = 18;
+  // Page 1 is a "cover" (title + distance + coords, centered both ways);
+  // the body starts exactly at the next page boundary so the flow engine
+  // breaks pages between lines instead of clipping them at the bezel.
+  int cover_h = title_h + 10 + DIST_ROW_H - 2 + COORD_ROW_H;
+  int title_y = (bounds.size.h - cover_h) / 2;
+  if (title_y < 12) {
+    title_y = 12;
+  }
   layer_set_frame(text_layer_get_layer(s_title_layer),
                   GRect(MARGIN, title_y, width, title_h + 8));
   int dist_y = title_y + title_h + 10;
