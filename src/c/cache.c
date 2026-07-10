@@ -11,7 +11,7 @@ enum {
   PKEY_SUM_BASE = 42,  // ..50, summary text in 250-byte chunks
 };
 
-#define CACHE_VERSION 1
+#define CACHE_VERSION 2  // v2: Article grew to 64-byte titles
 #define SUM_CHUNK 250
 // The persist budget (~4KB total, shared with the list) can't hold a full
 // 4000-char summary; offline re-reads show the first 2000 chars.

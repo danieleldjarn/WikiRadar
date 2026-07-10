@@ -20,7 +20,36 @@ void data_load_units(void) {
 
 // 0 = follow the watch-wide content size; 1/2/3 = small/medium/large
 #define PKEY_TEXT_SIZE 62
+#define PKEY_CYRILLIC 63
 static int s_text_size = 0;
+bool g_cyrillic = false;
+
+void data_set_cyrillic(bool cyrillic) {
+  if (cyrillic == g_cyrillic) {
+    return;
+  }
+  g_cyrillic = cyrillic;
+  persist_write_bool(PKEY_CYRILLIC, cyrillic);
+}
+
+void data_load_cyrillic(void) {
+  g_cyrillic = persist_read_bool(PKEY_CYRILLIC);
+}
+
+static GFont prv_custom_font(uint32_t resource_id, GFont *cache) {
+  if (!*cache) {
+    *cache = fonts_load_custom_font(resource_get_handle(resource_id));
+  }
+  return *cache;
+}
+
+GFont data_title_font(void) {
+  static GFont s_title_font;
+  if (g_cyrillic) {
+    return prv_custom_font(RESOURCE_ID_FONT_TITLE_22, &s_title_font);
+  }
+  return fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD);
+}
 
 void data_set_text_size(int pref) {
   if (pref < 0 || pref > 4) {
@@ -56,19 +85,27 @@ GFont data_body_font(void) {
     effective = 2;
 #endif
   }
+  if (effective == 4) {
+    // Bundled DejaVu Sans Bold: big, heavy, and with Latin + Cyrillic
+    // coverage (Bitham renders non-ASCII letters as tiny fallbacks)
+    return prv_custom_font(RESOURCE_ID_FONT_XL_30, &s_xl_font);
+  }
+  if (g_cyrillic) {
+    static GFont s_cyr_fonts[3];  // 18 / 24 / 28
+    switch (effective) {
+      case 1:
+        return prv_custom_font(RESOURCE_ID_FONT_BODY_18, &s_cyr_fonts[0]);
+      case 3:
+        return prv_custom_font(RESOURCE_ID_FONT_BODY_28, &s_cyr_fonts[2]);
+      default:
+        return prv_custom_font(RESOURCE_ID_FONT_BODY_24, &s_cyr_fonts[1]);
+    }
+  }
   switch (effective) {
     case 1:
       return fonts_get_system_font(FONT_KEY_GOTHIC_18);
     case 3:
       return fonts_get_system_font(FONT_KEY_GOTHIC_28);
-    case 4:
-      // Bundled DejaVu Sans Bold: big, heavy, and with full Latin
-      // coverage (Bitham renders non-ASCII letters as tiny fallbacks)
-      if (!s_xl_font) {
-        s_xl_font = fonts_load_custom_font(
-            resource_get_handle(RESOURCE_ID_FONT_XL_30));
-      }
-      return s_xl_font;
     default:
       return fonts_get_system_font(FONT_KEY_GOTHIC_24);
   }

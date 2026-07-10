@@ -87,8 +87,7 @@ static void prv_layout(void) {
   int width = bounds.size.w - 2 * MARGIN;
 
   int16_t title_h =
-      prv_text_height(s_article.title,
-                      fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD), width);
+      prv_text_height(s_article.title, data_title_font(), width);
 #ifdef PBL_ROUND
   // Flowed text can take more lines than the rectangular measurement
   title_h += title_h / 2;
@@ -188,8 +187,7 @@ static void prv_window_load(Window *window) {
   scroll_layer_set_click_config_onto_window(s_scroll, window);
 
   s_title_layer = text_layer_create(GRect(MARGIN, 0, width, 60));
-  text_layer_set_font(s_title_layer,
-                      fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
+  text_layer_set_font(s_title_layer, data_title_font());
   text_layer_set_text(s_title_layer, s_article.title);
   scroll_layer_add_child(s_scroll, text_layer_get_layer(s_title_layer));
 

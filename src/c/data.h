@@ -2,7 +2,8 @@
 #include <pebble.h>
 
 #define MAX_ARTICLES 20
-#define MAX_TITLE_LEN 48
+// 64 bytes fits ~30 Cyrillic characters (2 bytes each in UTF-8)
+#define MAX_TITLE_LEN 64
 // Aplite has 24KB total app RAM; halving the summary buffer leaves the
 // heap breathing room (JS caps its sends to match)
 #ifdef PBL_PLATFORM_APLITE
@@ -41,9 +42,17 @@ void data_load_units(void);
 // 1..4 = small/medium/large/extra-large override
 void data_set_text_size(int pref);
 void data_load_text_size(void);
-// Font for the article body honoring the preference (extra-large is a
-// bundled font: Bitham lacks non-ASCII glyphs)
+
+// Whether the current content needs Cyrillic glyphs (detected phone-side
+// from article titles); switches titles and body to bundled fonts, since
+// the system fonts only cover Latin
+extern bool g_cyrillic;
+void data_set_cyrillic(bool cyrillic);
+void data_load_cyrillic(void);
+
+// Fonts honoring the size preference and the Cyrillic flag
 GFont data_body_font(void);
+GFont data_title_font(void);
 
 // Read-article tracking: a persisted rolling set of title hashes
 void data_mark_read(const char *title);

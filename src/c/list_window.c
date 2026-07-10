@@ -70,7 +70,23 @@ static void prv_draw_row(GContext *ctx, const Layer *cell_layer,
   Article *a = &g_articles[cell_index->row];
   char dist[16];
   data_format_distance(a->distance_m, dist, sizeof(dist));
-  menu_cell_basic_draw(ctx, cell_layer, a->title, dist, NULL);
+  // Drawn by hand instead of menu_cell_basic_draw: the title font must be
+  // swappable for Cyrillic content
+  GRect cell = layer_get_bounds(cell_layer);
+  bool highlighted = menu_cell_layer_is_highlighted(cell_layer);
+  graphics_context_set_text_color(ctx,
+                                  highlighted ? GColorWhite : GColorBlack);
+  graphics_draw_text(ctx, a->title, data_title_font(),
+                     GRect(5, -3, cell.size.w - 18, 27),
+                     GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft,
+                     NULL);
+  graphics_context_set_text_color(
+      ctx, highlighted ? GColorWhite
+                       : PBL_IF_COLOR_ELSE(GColorDarkGray, GColorBlack));
+  graphics_draw_text(ctx, dist, fonts_get_system_font(FONT_KEY_GOTHIC_18),
+                     GRect(5, 22, cell.size.w - 10, 20),
+                     GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft,
+                     NULL);
 
   if (data_is_read(a->title)) {
     GRect bounds = layer_get_bounds(cell_layer);

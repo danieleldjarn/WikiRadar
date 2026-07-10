@@ -136,12 +136,17 @@ static void prv_inbox_received(DictionaryIterator *iter, void *context) {
         prv_send(CMD_GET_LIST, 0, false);
       }
       break;
-    case CMD_LIST_START:
+    case CMD_LIST_START: {
       g_article_count = 0;
       prv_update_location(iter);
+      Tuple *cyrillic = dict_find(iter, MESSAGE_KEY_CYRILLIC);
+      if (cyrillic) {
+        data_set_cyrillic(cyrillic->value->int32 != 0);
+      }
       list_window_set_status("Loading nearby...");
       list_window_set_header("Updating...");
       break;
+    }
     case CMD_LIST_ITEM:
       prv_handle_list_item(iter);
       list_window_on_list_updated(false);
