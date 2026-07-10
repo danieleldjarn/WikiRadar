@@ -34,7 +34,8 @@ void data_load_text_size(void) {
   s_text_size = persist_read_int(PKEY_TEXT_SIZE);  // 0 when unset
 }
 
-const char *data_body_font_key(void) {
+GFont data_body_font(void) {
+  static GFont s_xl_font;
   int effective = s_text_size;
   if (effective == 0) {
 #if PBL_API_EXISTS(preferred_content_size)
@@ -57,15 +58,19 @@ const char *data_body_font_key(void) {
   }
   switch (effective) {
     case 1:
-      return FONT_KEY_GOTHIC_18;
+      return fonts_get_system_font(FONT_KEY_GOTHIC_18);
     case 3:
-      return FONT_KEY_GOTHIC_28;
+      return fonts_get_system_font(FONT_KEY_GOTHIC_28);
     case 4:
-      // Biggest full-alphabet system font; the heavy weight also helps
-      // low-vision readability
-      return FONT_KEY_BITHAM_30_BLACK;
+      // Bundled DejaVu Sans Bold: big, heavy, and with full Latin
+      // coverage (Bitham renders non-ASCII letters as tiny fallbacks)
+      if (!s_xl_font) {
+        s_xl_font = fonts_load_custom_font(
+            resource_get_handle(RESOURCE_ID_FONT_XL_30));
+      }
+      return s_xl_font;
     default:
-      return FONT_KEY_GOTHIC_24;
+      return fonts_get_system_font(FONT_KEY_GOTHIC_24);
   }
 }
 

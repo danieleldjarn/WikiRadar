@@ -69,17 +69,16 @@ void article_window_on_text_size(void) {
     return;
   }
   text_layer_set_font(s_body_layer,
-                      fonts_get_system_font(data_body_font_key()));
+                      data_body_font());
   prv_layout();
 }
 
 // Measure text independently of layer render state;
 // text_layer_get_content_size is only reliable after a render.
-static int16_t prv_text_height(const char *text, const char *font_key,
-                               int width) {
+static int16_t prv_text_height(const char *text, GFont font, int width) {
   GSize size = graphics_text_layout_get_content_size(
-      text, fonts_get_system_font(font_key), GRect(0, 0, width, 8000),
-      GTextOverflowModeWordWrap, GTextAlignmentLeft);
+      text, font, GRect(0, 0, width, 8000), GTextOverflowModeWordWrap,
+      GTextAlignmentLeft);
   return size.h;
 }
 
@@ -88,7 +87,8 @@ static void prv_layout(void) {
   int width = bounds.size.w - 2 * MARGIN;
 
   int16_t title_h =
-      prv_text_height(s_article.title, FONT_KEY_GOTHIC_24_BOLD, width);
+      prv_text_height(s_article.title,
+                      fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD), width);
 #ifdef PBL_ROUND
   // Flowed text can take more lines than the rectangular measurement
   title_h += title_h / 2;
@@ -137,7 +137,7 @@ static void prv_layout(void) {
   }
 #endif
   int16_t body_h = prv_text_height(text_layer_get_text(s_body_layer),
-                                   data_body_font_key(), width);
+                                   data_body_font(), width);
 #ifdef PBL_ROUND
   body_h += body_h / 2;
 #endif
@@ -228,7 +228,7 @@ static void prv_window_load(Window *window) {
 
   s_body_layer = text_layer_create(GRect(MARGIN, 60, width, 2000));
   text_layer_set_font(s_body_layer,
-                      fonts_get_system_font(data_body_font_key()));
+                      data_body_font());
   text_layer_set_text(s_body_layer,
                       s_have_cached_summary ? g_summary : "Loading...");
   scroll_layer_add_child(s_scroll, text_layer_get_layer(s_body_layer));

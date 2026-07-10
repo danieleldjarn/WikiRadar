@@ -38,11 +38,12 @@ void data_set_units(bool imperial);
 void data_load_units(void);
 
 // Article text size: 0 = follow the watch-wide content size setting,
-// 1/2/3 = small/medium/large override
+// 1..4 = small/medium/large/extra-large override
 void data_set_text_size(int pref);
 void data_load_text_size(void);
-// System font key for the article body honoring the preference
-const char *data_body_font_key(void);
+// Font for the article body honoring the preference (extra-large is a
+// bundled font: Bitham lacks non-ASCII glyphs)
+GFont data_body_font(void);
 
 // Read-article tracking: a persisted rolling set of title hashes
 void data_mark_read(const char *title);
