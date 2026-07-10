@@ -23,7 +23,7 @@ void data_load_units(void) {
 static int s_text_size = 0;
 
 void data_set_text_size(int pref) {
-  if (pref < 0 || pref > 3) {
+  if (pref < 0 || pref > 4) {
     return;
   }
   s_text_size = pref;
@@ -43,8 +43,10 @@ const char *data_body_font_key(void) {
         effective = 1;
         break;
       case PreferredContentSizeLarge:
-      case PreferredContentSizeExtraLarge:
         effective = 3;
+        break;
+      case PreferredContentSizeExtraLarge:
+        effective = 4;
         break;
       default:
         effective = 2;
@@ -58,6 +60,10 @@ const char *data_body_font_key(void) {
       return FONT_KEY_GOTHIC_18;
     case 3:
       return FONT_KEY_GOTHIC_28;
+    case 4:
+      // Biggest full-alphabet system font; the heavy weight also helps
+      // low-vision readability
+      return FONT_KEY_BITHAM_30_BLACK;
     default:
       return FONT_KEY_GOTHIC_24;
   }

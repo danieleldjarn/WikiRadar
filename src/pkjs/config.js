@@ -90,6 +90,7 @@ module.exports = [
           { label: 'Small', value: '1' },
           { label: 'Medium', value: '2' },
           { label: 'Large', value: '3' },
+          { label: 'Extra large', value: '4' },
         ],
       },
     ],
