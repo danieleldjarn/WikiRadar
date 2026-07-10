@@ -37,6 +37,13 @@ void data_format_distance(int32_t meters, char *buf, size_t buf_len);
 void data_set_units(bool imperial);
 void data_load_units(void);
 
+// Article text size: 0 = follow the watch-wide content size setting,
+// 1/2/3 = small/medium/large override
+void data_set_text_size(int pref);
+void data_load_text_size(void);
+// System font key for the article body honoring the preference
+const char *data_body_font_key(void);
+
 // Read-article tracking: a persisted rolling set of title hashes
 void data_mark_read(const char *title);
 bool data_is_read(const char *title);

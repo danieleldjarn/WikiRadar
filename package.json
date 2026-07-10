@@ -43,7 +43,8 @@
       "ERROR",
       "LANG",
       "LANG_CUSTOM",
-      "RADIUS"
+      "RADIUS",
+      "TEXT_SIZE"
     ],
     "resources": {
       "media": [

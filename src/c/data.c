@@ -18,6 +18,51 @@ void data_load_units(void) {
   g_units_imperial = persist_read_bool(PKEY_UNITS);
 }
 
+// 0 = follow the watch-wide content size; 1/2/3 = small/medium/large
+#define PKEY_TEXT_SIZE 62
+static int s_text_size = 0;
+
+void data_set_text_size(int pref) {
+  if (pref < 0 || pref > 3) {
+    return;
+  }
+  s_text_size = pref;
+  persist_write_int(PKEY_TEXT_SIZE, pref);
+}
+
+void data_load_text_size(void) {
+  s_text_size = persist_read_int(PKEY_TEXT_SIZE);  // 0 when unset
+}
+
+const char *data_body_font_key(void) {
+  int effective = s_text_size;
+  if (effective == 0) {
+#if PBL_API_EXISTS(preferred_content_size)
+    switch (preferred_content_size()) {
+      case PreferredContentSizeSmall:
+        effective = 1;
+        break;
+      case PreferredContentSizeLarge:
+      case PreferredContentSizeExtraLarge:
+        effective = 3;
+        break;
+      default:
+        effective = 2;
+    }
+#else
+    effective = 2;
+#endif
+  }
+  switch (effective) {
+    case 1:
+      return FONT_KEY_GOTHIC_18;
+    case 3:
+      return FONT_KEY_GOTHIC_28;
+    default:
+      return FONT_KEY_GOTHIC_24;
+  }
+}
+
 // Rolling set of FNV-1a title hashes; oldest entries get overwritten.
 #define READ_SET_SIZE 30
 typedef struct {

@@ -78,6 +78,20 @@ module.exports = [
         description: 'Show distances in feet and miles instead of meters.',
         defaultValue: false,
       },
+      {
+        type: 'select',
+        messageKey: 'TEXT_SIZE',
+        defaultValue: '0',
+        label: 'Article text size',
+        description:
+          'By default follows the watch-wide text size setting.',
+        options: [
+          { label: 'Follow watch setting', value: '0' },
+          { label: 'Small', value: '1' },
+          { label: 'Medium', value: '2' },
+          { label: 'Large', value: '3' },
+        ],
+      },
     ],
   },
   {

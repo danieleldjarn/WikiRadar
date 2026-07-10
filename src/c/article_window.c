@@ -62,6 +62,17 @@ void article_window_on_location(void) {
   prv_update_distance();
 }
 
+static void prv_layout(void);
+
+void article_window_on_text_size(void) {
+  if (!s_window || !window_stack_contains_window(s_window)) {
+    return;
+  }
+  text_layer_set_font(s_body_layer,
+                      fonts_get_system_font(data_body_font_key()));
+  prv_layout();
+}
+
 // Measure text independently of layer render state;
 // text_layer_get_content_size is only reliable after a render.
 static int16_t prv_text_height(const char *text, const char *font_key,
@@ -126,7 +137,7 @@ static void prv_layout(void) {
   }
 #endif
   int16_t body_h = prv_text_height(text_layer_get_text(s_body_layer),
-                                   FONT_KEY_GOTHIC_24, width);
+                                   data_body_font_key(), width);
 #ifdef PBL_ROUND
   body_h += body_h / 2;
 #endif
@@ -216,7 +227,8 @@ static void prv_window_load(Window *window) {
   scroll_layer_add_child(s_scroll, text_layer_get_layer(s_coord_layer));
 
   s_body_layer = text_layer_create(GRect(MARGIN, 60, width, 2000));
-  text_layer_set_font(s_body_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24));
+  text_layer_set_font(s_body_layer,
+                      fonts_get_system_font(data_body_font_key()));
   text_layer_set_text(s_body_layer,
                       s_have_cached_summary ? g_summary : "Loading...");
   scroll_layer_add_child(s_scroll, text_layer_get_layer(s_body_layer));
@@ -228,8 +240,6 @@ static void prv_window_load(Window *window) {
   layer_set_hidden(s_glyph_layer, true);
   text_layer_set_text_alignment(s_title_layer, GTextAlignmentCenter);
   text_layer_set_text_alignment(s_dist_layer, GTextAlignmentCenter);
-  text_layer_set_font(s_body_layer,
-                      fonts_get_system_font(FONT_KEY_GOTHIC_24));
   // Must be called after the layers are in the view hierarchy
   text_layer_enable_screen_text_flow_and_paging(s_title_layer, 8);
   text_layer_enable_screen_text_flow_and_paging(s_body_layer, 8);
