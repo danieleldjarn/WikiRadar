@@ -77,6 +77,30 @@ function pump(retriesLeft) {
   );
 }
 
+// Truncate to a UTF-8 byte budget without splitting a character;
+// the watch renders nothing at all for invalid UTF-8
+function utf8Truncate(s, maxBytes) {
+  var bytes = 0;
+  var i = 0;
+  while (i < s.length) {
+    var code = s.charCodeAt(i);
+    var pair = code >= 0xd800 && code <= 0xdbff && i + 1 < s.length;
+    var n = code < 0x80 ? 1 : code < 0x800 ? 2 : pair ? 4 : 3;
+    if (bytes + n > maxBytes) {
+      break;
+    }
+    bytes += n;
+    i += pair ? 2 : 1;
+  }
+  return s.substring(0, i);
+}
+
+// Combining marks (e.g. Russian stress accents) can't be composed by
+// the watch's bitmap fonts and would render as boxes
+function stripCombining(s) {
+  return s.replace(/[̀-ͯ]/g, '');
+}
+
 function sendError(msg) {
   console.log('Error: ' + msg);
   enqueue([{ CMD: CMD.ERROR, ERROR: msg }]);
@@ -237,17 +261,22 @@ function handleGetList() {
         return;
       }
       articles = json.query.geosearch;
+      // The watch swaps to bundled Cyrillic-capable fonts when needed
+      var cyrillic = /[Ѐ-ӿ]/.test(
+        articles.map(function (a) { return a.title; }).join('')
+      );
       var msgs = [{
         CMD: CMD.LIST_START,
         COUNT: articles.length,
         LOC_LAT: Math.round(coords.latitude * 100000),
         LOC_LON: Math.round(coords.longitude * 100000),
+        CYRILLIC: cyrillic ? 1 : 0,
       }];
       articles.forEach(function (a, i) {
         msgs.push({
           CMD: CMD.LIST_ITEM,
           INDEX: i,
-          TITLE: a.title.substring(0, 47),
+          TITLE: utf8Truncate(stripCombining(a.title), 63),
           LAT: Math.round(a.lat * 100000),
           LON: Math.round(a.lon * 100000),
           DISTANCE: Math.round(a.dist),
@@ -278,7 +307,7 @@ function handleGetSummary(index) {
       sendError('No summary');
       return;
     }
-    var text = page.extract;
+    var text = stripCombining(page.extract);
     var maxChars = summaryMaxChars();
     if (text.length > maxChars) {
       text = text.substring(0, maxChars - 1) + '…';

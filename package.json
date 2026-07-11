@@ -1,7 +1,7 @@
 {
   "name": "wikiradar",
   "author": "Daniel E V",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "keywords": [
     "pebble-app"
   ],
@@ -43,7 +43,9 @@
       "ERROR",
       "LANG",
       "LANG_CUSTOM",
-      "RADIUS"
+      "RADIUS",
+      "TEXT_SIZE",
+      "CYRILLIC"
     ],
     "resources": {
       "media": [
@@ -52,6 +54,41 @@
           "type": "bitmap",
           "name": "IMAGE_MENU_ICON",
           "file": "images/icon.png"
+        },
+        {
+          "type": "font",
+          "name": "FONT_XL_30",
+          "file": "fonts/DejaVuSans-Bold.ttf",
+          "characterRegex": "[ -ÿĀ-ſЀ-ӿ–—‘-”…«»]",
+          "extended": true
+        },
+        {
+          "type": "font",
+          "name": "FONT_TITLE_22",
+          "file": "fonts/DejaVuSans-Bold.ttf",
+          "characterRegex": "[ -ÿĀ-ſЀ-ӿ–—‘-”…«»]",
+          "extended": true
+        },
+        {
+          "type": "font",
+          "name": "FONT_BODY_18",
+          "file": "fonts/DejaVuSans.ttf",
+          "characterRegex": "[ -ÿĀ-ſЀ-ӿ–—‘-”…«»]",
+          "extended": true
+        },
+        {
+          "type": "font",
+          "name": "FONT_BODY_24",
+          "file": "fonts/DejaVuSans.ttf",
+          "characterRegex": "[ -ÿĀ-ſЀ-ӿ–—‘-”…«»]",
+          "extended": true
+        },
+        {
+          "type": "font",
+          "name": "FONT_BODY_28",
+          "file": "fonts/DejaVuSans.ttf",
+          "characterRegex": "[ -ÿĀ-ſЀ-ӿ–—‘-”…«»]",
+          "extended": true
         }
       ]
     }

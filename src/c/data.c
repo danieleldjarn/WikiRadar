@@ -18,6 +18,99 @@ void data_load_units(void) {
   g_units_imperial = persist_read_bool(PKEY_UNITS);
 }
 
+// 0 = follow the watch-wide content size; 1/2/3 = small/medium/large
+#define PKEY_TEXT_SIZE 62
+#define PKEY_CYRILLIC 63
+static int s_text_size = 0;
+bool g_cyrillic = false;
+
+void data_set_cyrillic(bool cyrillic) {
+  if (cyrillic == g_cyrillic) {
+    return;
+  }
+  g_cyrillic = cyrillic;
+  persist_write_bool(PKEY_CYRILLIC, cyrillic);
+}
+
+void data_load_cyrillic(void) {
+  g_cyrillic = persist_read_bool(PKEY_CYRILLIC);
+}
+
+static GFont prv_custom_font(uint32_t resource_id, GFont *cache) {
+  if (!*cache) {
+    *cache = fonts_load_custom_font(resource_get_handle(resource_id));
+  }
+  return *cache;
+}
+
+GFont data_title_font(void) {
+  static GFont s_title_font;
+  if (g_cyrillic) {
+    return prv_custom_font(RESOURCE_ID_FONT_TITLE_22, &s_title_font);
+  }
+  return fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD);
+}
+
+void data_set_text_size(int pref) {
+  if (pref < 0 || pref > 4) {
+    return;
+  }
+  s_text_size = pref;
+  persist_write_int(PKEY_TEXT_SIZE, pref);
+}
+
+void data_load_text_size(void) {
+  s_text_size = persist_read_int(PKEY_TEXT_SIZE);  // 0 when unset
+}
+
+GFont data_body_font(void) {
+  static GFont s_xl_font;
+  int effective = s_text_size;
+  if (effective == 0) {
+#if PBL_API_EXISTS(preferred_content_size)
+    switch (preferred_content_size()) {
+      case PreferredContentSizeSmall:
+        effective = 1;
+        break;
+      case PreferredContentSizeLarge:
+        effective = 3;
+        break;
+      case PreferredContentSizeExtraLarge:
+        effective = 4;
+        break;
+      default:
+        effective = 2;
+    }
+#else
+    effective = 2;
+#endif
+  }
+  if (effective == 4) {
+    // Bundled DejaVu Sans Bold: big, heavy, and with Latin + Cyrillic
+    // coverage (Bitham renders non-ASCII letters as tiny fallbacks)
+    return prv_custom_font(RESOURCE_ID_FONT_XL_30, &s_xl_font);
+  }
+  if (g_cyrillic) {
+    static GFont s_cyr_fonts[3];  // 18 / 24 / 28
+    switch (effective) {
+      case 1:
+        return prv_custom_font(RESOURCE_ID_FONT_BODY_18, &s_cyr_fonts[0]);
+      case 3:
+        return prv_custom_font(RESOURCE_ID_FONT_BODY_28, &s_cyr_fonts[2]);
+      default:
+        return prv_custom_font(RESOURCE_ID_FONT_BODY_24, &s_cyr_fonts[1]);
+    }
+  }
+  switch (effective) {
+    case 1:
+      return fonts_get_system_font(FONT_KEY_GOTHIC_18);
+    case 3:
+      return fonts_get_system_font(FONT_KEY_GOTHIC_28);
+    default:
+      return fonts_get_system_font(FONT_KEY_GOTHIC_24);
+  }
+}
+
 // Rolling set of FNV-1a title hashes; oldest entries get overwritten.
 #define READ_SET_SIZE 30
 typedef struct {

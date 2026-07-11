@@ -182,8 +182,11 @@ static void prv_window_load(Window *window) {
   GRect bounds = layer_get_bounds(root);
 
   s_title_layer = text_layer_create(GRect(4, 0, bounds.size.w - 8, TITLE_H));
+  // System Gothic covers Latin only; swap for the bundled font on Cyrillic
   text_layer_set_font(s_title_layer,
-                      fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
+                      g_cyrillic
+                          ? data_title_font()
+                          : fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
   text_layer_set_text_alignment(s_title_layer, GTextAlignmentCenter);
   text_layer_set_overflow_mode(s_title_layer, GTextOverflowModeTrailingEllipsis);
   text_layer_set_text(s_title_layer, s_article.title);

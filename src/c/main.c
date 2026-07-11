@@ -36,6 +36,8 @@ static void prv_update_glance(void) {
 int main(void) {
   comm_init();
   data_load_units();
+  data_load_text_size();
+  data_load_cyrillic();
   data_load_read_set();
   bool cached = cache_load_list();
   list_window_push();

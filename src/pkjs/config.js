@@ -33,6 +33,7 @@ module.exports = [
           { label: 'Italiano', value: 'it' },
           { label: 'Português', value: 'pt' },
           { label: 'Polski', value: 'pl' },
+          { label: 'Русский', value: 'ru' },
         ],
       },
       {
@@ -54,9 +55,8 @@ module.exports = [
         label: 'Language code override',
         description:
           'Any Wikipedia language code, e.g. "haw". Takes precedence over ' +
-          'the dropdown when set. Note: the watch can only display ' +
-          'Latin-script text — Cyrillic, CJK, and similar scripts will ' +
-          'not render.',
+          'the dropdown when set. Note: the watch can only display Latin ' +
+          'and Cyrillic text — CJK and similar scripts will not render.',
         attributes: {
           placeholder: 'e.g. haw',
           limit: 8,
@@ -77,6 +77,21 @@ module.exports = [
         label: 'Imperial units',
         description: 'Show distances in feet and miles instead of meters.',
         defaultValue: false,
+      },
+      {
+        type: 'select',
+        messageKey: 'TEXT_SIZE',
+        defaultValue: '0',
+        label: 'Article text size',
+        description:
+          'By default follows the watch-wide text size setting.',
+        options: [
+          { label: 'Follow watch setting', value: '0' },
+          { label: 'Small', value: '1' },
+          { label: 'Medium', value: '2' },
+          { label: 'Large', value: '3' },
+          { label: 'Extra large', value: '4' },
+        ],
       },
     ],
   },
