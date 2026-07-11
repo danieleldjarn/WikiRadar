@@ -23,3 +23,14 @@ src/pkjs/        PebbleKit JS — runs on the phone (GPS, Wikipedia fetch)
 package.json     Project metadata (UUID, platforms, message keys)
 wscript          Build rules
 ```
+
+## Install
+
+Get it from the [Pebble Appstore](https://apps.repebble.com/61288080085549ccb302c108),
+or sideload the `.pbw` from the [latest release](https://github.com/danieleldjarn/WikiRadar/releases).
+
+## License
+
+[MIT](LICENSE). The bundled DejaVu fonts in `resources/fonts/` are
+distributed under their own license (see
+[`resources/fonts/DEJAVU-LICENSE`](resources/fonts/DEJAVU-LICENSE)).
